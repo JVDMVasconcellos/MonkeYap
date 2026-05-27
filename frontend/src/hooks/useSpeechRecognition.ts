@@ -22,8 +22,9 @@ interface SpeechRecognitionCtor {
   new(): SpeechRec
 }
 
-// Janela de tolerância: tolera até N palavras não reconhecidas antes de travar
-const SKIP_WINDOW = 6
+// Janela de tolerância para finais confirmados (estrita) e interim (mais larga)
+const SKIP_CONFIRMED = 3
+const SKIP_INTERIM   = 8
 
 function normalize(s: string): string {
   return s
@@ -34,14 +35,13 @@ function normalize(s: string): string {
     .trim()
 }
 
-// Alinha palavras faladas com o texto de referência.
-// Igual ao alignTranscript do Vosk: avança mesmo se palavras forem puladas/erradas.
-function alignWords(spokenWords: string[], refNorm: string[]): number {
-  let pos = 0
+// Alinha palavras faladas com o texto de referência a partir de startFrom.
+function alignWords(spokenWords: string[], refNorm: string[], startFrom = 0, skipWindow = SKIP_INTERIM): number {
+  let pos = startFrom
   for (const raw of spokenWords) {
     const w = normalize(raw)
     if (!w || pos >= refNorm.length) break
-    const limit = Math.min(pos + SKIP_WINDOW, refNorm.length)
+    const limit = Math.min(pos + skipWindow, refNorm.length)
     for (let i = pos; i < limit; i++) {
       if (refNorm[i] === w) { pos = i + 1; break }
     }
@@ -51,8 +51,10 @@ function alignWords(spokenWords: string[], refNorm: string[]): number {
 
 interface UseSpeechRecognitionReturn {
   matchedCount: number
-  supported:    boolean
-  start:        (refWords: string[]) => void
+  audioLevel:   number       // sempre 0 — Web Speech API não expõe áudio raw
+  modelLoading: boolean      // false — sem modelo pra carregar
+  modelError:   string | null
+  start:        (refWords: string[]) => Promise<void>
   stop:         () => void
   reset:        () => void
 }
@@ -61,13 +63,11 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [matchedCount, setMatchedCount] = useState(0)
 
   const recRef        = useRef<SpeechRec | null>(null)
-  const finalRef      = useRef('')
   const refNormRef    = useRef<string[]>([])
   const isActiveRef   = useRef(false)
-  // Ref estável para evitar stale closure no onend
+  const confirmedRef  = useRef(0)   // cursor só avança em resultados finais
   const spawnRef      = useRef<() => void>(() => {})
 
-  // Construtor guardado em ref — estável entre renders
   const CtorRef = useRef<SpeechRecognitionCtor | undefined>(
     typeof window !== 'undefined'
       ? ((window as unknown as Record<string, unknown>)['SpeechRecognition'] ??
@@ -77,43 +77,56 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
 
   const supported = Boolean(CtorRef.current)
 
+  const _setMatched = (next: number, ref: string[]) => {
+    const clamped = Math.min(next, ref.length)
+    setMatchedCount(prev => Math.max(prev, clamped))
+  }
+
   const _spawn = useCallback(() => {
     const Ctor = CtorRef.current
     if (!Ctor || !isActiveRef.current) return
 
     const rec          = new Ctor()
     rec.lang           = 'pt-BR'
-    rec.continuous     = false  // Chrome finaliza cada enunciado rápido → interim mais frequente
+    rec.continuous     = true   // sem gaps entre enunciados
     rec.interimResults = true
     recRef.current     = rec
 
     rec.onresult = (event) => {
-      // Acumula resultados finais; pega o interim atual (último resultado não-final)
+      const ref = refNormRef.current
+
+      // Processa resultados finais — atualiza cursor confirmado
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
-          finalRef.current += event.results[i][0].transcript + ' '
+          const words = event.results[i][0].transcript.trim().split(/\s+/).filter(Boolean)
+          const next  = alignWords(words, ref, confirmedRef.current, SKIP_CONFIRMED)
+          if (next > confirmedRef.current) {
+            confirmedRef.current = next
+            _setMatched(next, ref)
+          }
         }
       }
-      const last    = event.results[event.results.length - 1]
-      const interim = last?.isFinal ? '' : (last?.[0].transcript ?? '')
 
-      const spokenWords = (finalRef.current + interim).trim().split(/\s+/).filter(Boolean)
-      const next = alignWords(spokenWords, refNormRef.current)
-      setMatchedCount(prev => Math.max(prev, next))
+      // Resultado interim atual — alinha a partir do confirmado (nunca acumula lixo)
+      const last    = event.results[event.results.length - 1]
+      const interim = (!last?.isFinal) ? (last?.[0].transcript ?? '') : ''
+      if (interim) {
+        const words = interim.trim().split(/\s+/).filter(Boolean)
+        const next  = alignWords(words, ref, confirmedRef.current, SKIP_INTERIM)
+        _setMatched(next, ref)
+      }
     }
 
     rec.onerror = (e) => {
-      // 'no-speech' dispara frequentemente com continuous:false — é normal, reinicia
       if (e.error !== 'aborted' && e.error !== 'no-speech') {
         console.warn('SpeechRecognition error:', e.error)
       }
     }
 
-    // Com continuous:false o Chrome encerra após cada enunciado.
-    // Reinicia imediatamente para capturar o próximo pedaço de fala.
+    // continuous:true ainda pode encerrar por timeout de silêncio — reinicia
     rec.onend = () => {
       if (isActiveRef.current && recRef.current === rec) {
-        setTimeout(() => spawnRef.current(), 80)
+        setTimeout(() => spawnRef.current(), 60)
       }
     }
 
@@ -122,10 +135,10 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
 
   spawnRef.current = _spawn
 
-  const start = useCallback((refWords: string[]) => {
+  const start = useCallback(async (refWords: string[]) => {
     if (!CtorRef.current) return
     refNormRef.current  = refWords.map(normalize)
-    finalRef.current    = ''
+    confirmedRef.current = 0
     isActiveRef.current = true
     setMatchedCount(0)
     _spawn()
@@ -134,16 +147,18 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const stop = useCallback(() => {
     isActiveRef.current = false
     const rec = recRef.current
-    recRef.current = null          // limpa antes de stop() para onend não reiniciar
+    recRef.current = null
     try { rec?.stop() } catch { /* ok */ }
   }, [])
 
   const reset = useCallback(() => {
     stop()
-    finalRef.current = ''
+    confirmedRef.current = 0
     setMatchedCount(0)
   }, [stop])
 
-  return { matchedCount, supported, start, stop, reset }
+  const modelError = supported ? null : 'Web Speech API não suportada neste browser (use Chrome ou Edge)'
+
+  return { matchedCount, audioLevel: 0, modelLoading: false, modelError, start, stop, reset }
 }
 

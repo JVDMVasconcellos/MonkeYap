@@ -1,58 +1,119 @@
 import type { EvaluationResult } from '../types'
+import type { TimerMode } from '../types'
 
-interface Props { result: EvaluationResult }
+interface Props {
+  result:    EvaluationResult
+  timerMode: TimerMode
+  elapsed:   number
+}
 
-const STAT_ORDER = ['Precisão', 'Fluência', 'Completude', 'Ritmo', 'Entonação']
+const SECONDARY = ['Fluência', 'Completude', 'Ritmo', 'Entonação']
 
-export function ScoreBoard({ result }: Props) {
-  const wpm    = result.details.wpm
-  const stats  = STAT_ORDER.filter(k => k in result.scores)
+export function ScoreBoard({ result, timerMode, elapsed }: Props) {
+  const wpm       = result.details.wpm
+  const precisao  = result.scores['Precisão']
+  const timeLabel = typeof timerMode === 'number' ? `${timerMode}s` : `${elapsed}s`
+  const chars     = result.transcribed
+    ? result.transcribed.replace(/\s/g, '').length
+    : null
 
   return (
-    <div className="w-full space-y-10 animate-slide-up">
+    <div className="w-full space-y-8 animate-slide-up">
 
-      {/* ── Números grandes — MonkeyType style ── */}
-      <div className="flex flex-wrap gap-x-12 gap-y-6 items-end">
-
-        {/* WPM — destaque máximo */}
-        {wpm && (
-          <div>
-            <div className="font-mono font-bold tabular-nums leading-none" style={{ fontSize: '6rem', color: 'var(--color-main)' }}>
-              {wpm}
-            </div>
-            <div className="text-sub text-sm mt-1 font-mono">wpm</div>
-          </div>
+      {/* ── Linha principal: WPM + Precisão (hero stats) ── */}
+      <div className="flex flex-wrap items-end gap-10">
+        {wpm != null && (
+          <StatGroup
+            label="wpm"
+            value={String(wpm)}
+            hero
+          />
         )}
+        {precisao != null && (
+          <StatGroup
+            label="precisão"
+            value={`${precisao.toFixed(1)}`}
+            hero
+          />
+        )}
+      </div>
 
-        {/* Demais métricas */}
-        {stats.map(k => (
-          <div key={k}>
-            <div className="font-mono font-bold text-4xl tabular-nums leading-none text-text">
-              {result.scores[k].toFixed(1)}
-            </div>
-            <div className="text-sub text-sm mt-1 font-mono">{k.toLowerCase()}</div>
-          </div>
+      {/* ── Linha secundária: métricas + tempo + chars ── */}
+      <div className="flex flex-wrap items-end gap-8">
+        {SECONDARY.filter(k => k in result.scores).map(k => (
+          <StatGroup
+            key={k}
+            label={k.toLowerCase()}
+            value={result.scores[k].toFixed(1)}
+          />
         ))}
+
+        <StatGroup label="tempo" value={timeLabel} />
+
+        {chars != null && (
+          <StatGroup label="chars" value={String(chars)} />
+        )}
       </div>
 
       {/* ── Observações ── */}
       {result.errors.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1.5 pt-2">
           {result.errors.map((e, i) => (
-            <p key={i} className="text-sub text-base font-mono">
-              <span className="text-error mr-2">›</span>{e}
+            <p key={i} className="font-mono text-sm" style={{ color: 'var(--color-sub)' }}>
+              <span style={{ color: 'var(--color-error)', marginRight: '0.5rem' }}>›</span>
+              {e}
             </p>
           ))}
         </div>
       )}
 
-      {/* ── O que foi reconhecido ── */}
+      {/* ── Reconhecido ── */}
       {result.transcribed && (
-        <div>
-          <p className="text-sub text-sm uppercase tracking-widest font-mono mb-2">reconhecido</p>
-          <p className="font-mono text-base text-sub leading-relaxed">{result.transcribed}</p>
+        <div className="pt-2">
+          <p
+            className="font-mono text-xs uppercase tracking-widest mb-2"
+            style={{ color: 'var(--color-sub)' }}
+          >
+            reconhecido
+          </p>
+          <p
+            className="font-mono text-sm leading-relaxed"
+            style={{ color: 'var(--color-sub)' }}
+          >
+            {result.transcribed}
+          </p>
         </div>
       )}
+    </div>
+  )
+}
+
+function StatGroup({
+  label,
+  value,
+  hero = false,
+}: {
+  label: string
+  value: string
+  hero?: boolean
+}) {
+  return (
+    <div>
+      <div
+        className="font-mono font-bold tabular-nums leading-none"
+        style={{
+          fontSize: hero ? '5rem' : '2.25rem',
+          color:    hero ? 'var(--color-main)' : 'var(--color-text)',
+        }}
+      >
+        {value}
+      </div>
+      <div
+        className="font-mono mt-1"
+        style={{ fontSize: '0.75rem', color: 'var(--color-sub)' }}
+      >
+        {label}
+      </div>
     </div>
   )
 }

@@ -1,24 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { evaluate, fetchCategories, fetchRandomText } from './api'
 import { AudioLevel } from './components/AudioLevel'
 import { CategoryPicker } from './components/CategoryPicker'
+import { Header } from './components/Header'
 import { ScoreBoard } from './components/ScoreBoard'
-import { SettingsMenu } from './components/SettingsMenu'
 import { TextDisplay } from './components/TextDisplay'
 import { useRecorder } from './hooks/useRecorder'
 import { useTheme } from './hooks/useTheme'
 import { useWebSocketSpeech } from './hooks/useWebSocketSpeech'
 import type { AppState, Category, EvaluationResult, TextItem, TimerMode } from './types'
 
-const TIMER_OPTIONS: { label: string; value: TimerMode }[] = [
-  { label: '∞',    value: 'unlimited' },
-  { label: '15',   value: 15 },
-  { label: '30',   value: 30 },
-  { label: '60',   value: 60 },
-]
-
-const VAD_AUTO_THRESH  = 0.015  // RMS para considerar voz
-const VAD_AUTO_HOLD_MS = 200    // voz deve durar ≥200ms (filtra barulhos rápidos)
+const VAD_AUTO_THRESH  = 0.015
+const VAD_AUTO_HOLD_MS = 200
 
 export default function App() {
   const [appState,   setAppState]   = useState<AppState>('idle')
@@ -211,7 +204,19 @@ export default function App() {
     }
   }, [speech.matchedCount, words.length, appState])
 
-  const countDisplay = typeof timerMode === 'number' ? Math.max(0, timerMode - elapsed) : elapsed
+  // ── Derivações ──
+  const liveWpm = isRecording && elapsed > 0
+    ? Math.round(speech.matchedCount / elapsed * 60)
+    : 0
+
+  const countDisplay = typeof timerMode === 'number'
+    ? Math.max(0, timerMode - elapsed)
+    : elapsed
+
+  const progress = typeof timerMode === 'number' && isRecording
+    ? Math.min(100, (elapsed / timerMode) * 100)
+    : 0
+
   const fmt = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
@@ -220,142 +225,192 @@ export default function App() {
     : 'var(--color-sub)'
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }}>
 
-      {/* ── Header ── */}
-      <header className="px-10 pt-5 pb-0 flex items-center justify-center shrink-0">
-        <img src="/logo.png" alt="MonkeYap logo" className="h-20 w-20 object-contain rounded-xl" />
-      </header>
-
-      {/* ── Mode bars (categoria + timer) ── */}
-      <div className="flex flex-col items-center gap-2 py-4 shrink-0">
-        <CategoryPicker
-          categories={categories}
-          selected={category}
-          onSelect={handleCategorySelect}
-          disabled={isLocked}
+      {/* ── Barra de progresso no topo (modo cronometrado) ── */}
+      {typeof timerMode === 'number' && isRecording && (
+        <div
+          className="fixed top-0 left-0 z-50 transition-all duration-300 ease-linear"
+          style={{ width: `${progress}%`, height: '3px', background: 'var(--color-main)' }}
         />
+      )}
 
-        {/* Timer options */}
-        <div className="flex items-center gap-1 bg-panel/50 rounded-full px-2 py-1.5">
-          {TIMER_OPTIONS.map(opt => (
-            <button
-              key={String(opt.value)}
-              onClick={() => !isLocked && setTimerMode(opt.value)}
+      {/* ── Header Monkeytype-style ── */}
+      <Header theme={theme} setTheme={setTheme} />
+
+      {/* ── Main ── */}
+      <main className="flex-1 flex flex-col items-center justify-center px-8 py-4">
+        <div className="w-full max-w-4xl mx-auto flex flex-col items-center gap-8">
+
+          {/* ── Config bar (escondida nos resultados) ── */}
+          {appState !== 'results' && (
+            <CategoryPicker
+              categories={categories}
+              selectedCategory={category}
+              onSelectCategory={handleCategorySelect}
+              timerMode={timerMode}
+              onSelectTimer={mode => !isLocked && setTimerMode(mode)}
               disabled={isLocked}
-              className={[
-                'font-mono text-base px-5 py-1.5 rounded-full transition-all duration-200',
-                isLocked ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
-                timerMode === opt.value ? 'bg-bg text-main shadow-sm' : 'text-sub hover:text-text',
-              ].join(' ')}
-            >
-              {opt.label}
-            </button>
-          ))}
+            />
+          )}
+
+          {/* ── Erro ── */}
+          {error && (
+            <p className="font-mono text-sm" style={{ color: 'var(--color-error)' }}>{error}</p>
+          )}
+
+          {/* ── Área de teste ── */}
+          {appState !== 'results' && (
+            <div className="w-full flex flex-col items-center gap-5">
+
+              {/* Live stats — acima do texto, visíveis só durante gravação */}
+              {isRecording && (
+                <div className="w-full flex items-end gap-8">
+                  <div>
+                    <div className="font-mono font-bold tabular-nums leading-none" style={{ fontSize: '2rem', color: 'var(--color-text)' }}>
+                      {liveWpm}
+                    </div>
+                    <div className="font-mono text-xs mt-0.5" style={{ color: 'var(--color-sub)' }}>wpm</div>
+                  </div>
+                  <div>
+                    <div className="font-mono font-bold tabular-nums leading-none" style={{ fontSize: '2rem', color: 'var(--color-text)' }}>
+                      {speech.matchedCount}
+                      <span className="font-normal" style={{ color: 'var(--color-sub)', fontSize: '1.1rem' }}>
+                        /{words.length}
+                      </span>
+                    </div>
+                    <div className="font-mono text-xs mt-0.5" style={{ color: 'var(--color-sub)' }}>palavras</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Texto */}
+              {textItem && (
+                <div className={`w-full transition-all duration-500 ${isRecording ? 'recording-glow' : ''}`}>
+                  <TextDisplay
+                    item={textItem}
+                    wordDiff={[]}
+                    matchedCount={speech.matchedCount}
+                    isActive={isRecording || appState === 'ready'}
+                  />
+                </div>
+              )}
+
+              {/* Placeholder sem texto */}
+              {!textItem && (
+                <p className="font-mono text-base py-16" style={{ color: 'var(--color-sub)' }}>
+                  selecione uma categoria para começar
+                </p>
+              )}
+
+              {/* ── Controles abaixo do texto ── */}
+              {textItem && (
+                <div className="flex flex-col items-center gap-3">
+                  {/* Timer */}
+                  <div
+                    className="font-mono font-bold tabular-nums transition-colors duration-300"
+                    style={{ fontSize: '4.5rem', lineHeight: 1, color: timerColor }}
+                  >
+                    {fmt(countDisplay)}
+                  </div>
+
+                  {/* Status / hint */}
+                  {appState === 'ready' && (
+                    <p className="font-mono text-sm px-4 py-1.5 rounded-full" style={{ background: 'rgb(var(--color-panel-rgb)/0.6)', color: 'var(--color-sub)' }}>
+                      {speech.modelLoading ? '⏳ carregando modelo...' : 'fale para começar'}
+                    </p>
+                  )}
+                  {isRecording && <AudioLevel level={speech.audioLevel} isActive />}
+                  {appState === 'analyzing' && (
+                    <p className="font-mono text-sm animate-pulse" style={{ color: 'var(--color-sub)' }}>analisando...</p>
+                  )}
+
+                  {/* Restart icon — estilo Monkeytype */}
+                  {appState === 'ready' && (
+                    <button
+                      onClick={handleNewText}
+                      title="Novo texto (tab)"
+                      className="mt-1 cursor-pointer transition-colors duration-150"
+                      style={{ color: 'var(--color-sub)' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-main)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
+                    >
+                      <RestartIcon />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Resultados ── */}
+          {appState === 'results' && (
+            <div className="w-full animate-slide-up flex flex-col gap-10">
+              {results && <ScoreBoard result={results} timerMode={timerMode} elapsed={elapsed} />}
+
+              <TextDisplay
+                item={textItem}
+                wordDiff={results?.word_diff ?? []}
+                matchedCount={0}
+                isActive={false}
+              />
+
+              <div className="flex items-center gap-3">
+                <ActionButton onClick={handleReset} title="tentar novamente">
+                  <RestartIcon />
+                </ActionButton>
+                <ActionButton onClick={handleNewText} title="próximo texto">
+                  <NextIcon />
+                </ActionButton>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* ── Main — conteúdo centralizado verticalmente ── */}
-      <main className="flex-1 flex flex-col items-center justify-center gap-6 px-10 max-w-5xl mx-auto w-full">
-
-        {error && (
-          <p className="text-error text-sm font-mono">{error}</p>
-        )}
-
-        {/* ── Texto (ready / recording / analyzing) ── */}
-        {appState !== 'results' && (
-          <div className={`w-full transition-all duration-500 ${isRecording ? 'recording-glow' : ''}`}>
-            <TextDisplay
-              item={textItem}
-              wordDiff={[]}
-              matchedCount={speech.matchedCount}
-              isActive={isRecording || appState === 'ready'}
-            />
-          </div>
-        )}
-
-        {/* ── Controles abaixo do texto ── */}
-        {textItem && appState !== 'results' && (
-          <div className="flex flex-col items-center gap-4">
-
-            {/* Timer */}
-            <div
-              className="font-mono font-bold tabular-nums transition-colors"
-              style={{ fontSize: '5.5rem', lineHeight: 1, color: timerColor }}
-            >
-              {fmt(countDisplay)}
-            </div>
-
-            {/* Hint / contador */}
-            {appState === 'ready' && (
-              <p className="font-mono text-base px-4 py-1.5 rounded-full bg-panel/50 text-sub">
-                {speech.modelLoading ? '⏳ carregando modelo...' : 'fale para começar'}
-              </p>
-            )}
-            {isRecording && (
-              <p className="font-mono text-base px-4 py-1.5 rounded-full bg-panel/50 text-sub tabular-nums">
-                {speech.matchedCount}
-                <span className="text-border mx-2">/</span>
-                {words.length}
-              </p>
-            )}
-            {appState === 'analyzing' && (
-              <p className="font-mono text-base px-4 py-1.5 rounded-full bg-panel/50 text-sub animate-pulse">analisando...</p>
-            )}
-
-            {/* Audio bar */}
-            <AudioLevel level={speech.audioLevel} isActive={isRecording} />
-
-            {/* Novo texto (apenas no estado ready) */}
-            {appState === 'ready' && (
-              <button
-                onClick={handleNewText}
-                title="Novo texto (tab)"
-                className="font-mono text-sub hover:text-main text-2xl cursor-pointer transition-colors mt-1"
-              >
-                ↻
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* ── Results ── */}
-        {appState === 'results' && (
-          <div className="w-full space-y-12">
-            {results && <ScoreBoard result={results} />}
-
-            <TextDisplay
-              item={textItem}
-              wordDiff={results?.word_diff ?? []}
-              matchedCount={0}
-              isActive={false}
-            />
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleReset}
-                className="font-mono text-base px-6 py-2 rounded-full bg-panel/50 text-sub hover:text-main hover:bg-panel transition-all duration-200 cursor-pointer flex items-center gap-2"
-              >
-                <span className="text-xl">↻</span> tentar novamente
-              </button>
-              <button
-                onClick={handleNewText}
-                className="font-mono text-base px-6 py-2 rounded-full bg-panel/50 text-sub hover:text-main hover:bg-panel transition-all duration-200 cursor-pointer flex items-center gap-2"
-              >
-                <span className="text-xl">→</span> novo texto
-              </button>
-            </div>
-          </div>
-        )}
       </main>
 
-      {/* ── Footer com keyboard hints ── */}
-      <footer className="shrink-0 py-2 flex justify-center gap-8 font-mono text-base text-sub">
-        <span><span className="text-text">tab</span> — novo texto</span>
-        {isRecording && <span><span className="text-text">esc</span> — cancelar</span>}
+      {/* ── Footer ── */}
+      <footer className="shrink-0 py-4 flex justify-center gap-8 font-mono text-sm" style={{ color: 'var(--color-sub)' }}>
+        <span>
+          <span style={{ color: 'var(--color-text)' }}>tab</span>{' '}— novo texto
+        </span>
+        {isRecording && (
+          <span>
+            <span style={{ color: 'var(--color-text)' }}>esc</span>{' '}— parar
+          </span>
+        )}
       </footer>
-
-      <SettingsMenu theme={theme} setTheme={setTheme} />
     </div>
+  )
+}
+
+function ActionButton({ onClick, title, children }: { onClick: () => void; title: string; children: ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className="font-mono text-sm px-5 py-2 rounded-xl transition-all duration-150 cursor-pointer flex items-center gap-2"
+      style={{ background: 'rgb(var(--color-panel-rgb)/0.6)', color: 'var(--color-sub)' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-main)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
+    >
+      {children} {title}
+    </button>
+  )
+}
+
+function RestartIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="1 4 1 10 7 10" />
+      <path d="M3.51 15a9 9 0 1 0 .49-3.65" />
+    </svg>
+  )
+}
+
+function NextIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </svg>
   )
 }

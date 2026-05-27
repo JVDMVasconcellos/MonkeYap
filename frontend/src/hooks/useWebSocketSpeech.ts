@@ -5,9 +5,10 @@ import { createModel, type KaldiRecognizer, type Model } from 'vosk-browser'
 // 100% offline (modelo cacheado pelo navegador após primeiro download).
 // Funciona em qualquer browser — não depende da Web Speech API.
 
-const SAMPLE_RATE   = 16000
-const BUFFER_SIZE   = 256   // 16ms @ 16kHz — máxima responsividade
-const SKIP_WINDOW   = 8     // tolera erros de reconhecimento até 8 palavras à frente
+const SAMPLE_RATE      = 16000
+const BUFFER_SIZE      = 256   // 16ms @ 16kHz — máxima responsividade
+const SKIP_WINDOW      = 8     // janela para parciais (display especulativo)
+const CONFIRMED_SKIP   = 3     // janela para results finais (mais estrita)
 
 const MODEL_URL = '/api/model/vosk-pt.tar.gz'
 
@@ -61,12 +62,12 @@ function normalize(s: string): string {
 
 // Alinha transcript falado com texto de referência a partir de startFrom.
 // Matching guloso + janela de skip pra tolerar palavras não reconhecidas.
-function alignTranscript(spokenWords: string[], refNormalized: string[], startFrom: number): number {
+function alignTranscript(spokenWords: string[], refNormalized: string[], startFrom: number, skipWindow = SKIP_WINDOW): number {
   let pos = startFrom
   for (const raw of spokenWords) {
     const w = normalize(raw)
     if (!w) continue
-    const limit = Math.min(pos + SKIP_WINDOW, refNormalized.length)
+    const limit = Math.min(pos + skipWindow, refNormalized.length)
     for (let i = pos; i < limit; i++) {
       if (refNormalized[i] === w) {
         pos = i + 1
@@ -102,6 +103,8 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
 
   const totalRef           = useRef(0)
   const matchedRef         = useRef(0)
+  const confirmedRef       = useRef(0)   // só avança em eventos `result` (finais confirmados)
+  const activeRef          = useRef(false)
   const refNormalizedRef   = useRef<string[]>([])
   const lastFinalTextRef   = useRef('')
   const pendingTimersRef   = useRef<ReturnType<typeof setTimeout>[]>([])
@@ -131,11 +134,14 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     }
   }
 
-  const _advance = (words: string[]) => {
-    // Expande símbolos antes de alinhar (ex: "%" → ["por", "cento"])
+  const _advance = (words: string[], confirmed: boolean) => {
+    if (!activeRef.current) return
     const expanded  = words.flatMap(w => expandSymbols(w).split(/\s+/).filter(Boolean))
-    const newCursor = alignTranscript(expanded, refNormalizedRef.current, matchedRef.current)
+    // Ambos partem de confirmedRef — parciais nunca "herdam" posição especulativa de outro parcial
+    const skipWin   = confirmed ? CONFIRMED_SKIP : SKIP_WINDOW
+    const newCursor = alignTranscript(expanded, refNormalizedRef.current, confirmedRef.current, skipWin)
     if (newCursor > matchedRef.current) _setMatched(newCursor)
+    if (confirmed && newCursor > confirmedRef.current) confirmedRef.current = newCursor
   }
 
   const _teardown = useCallback(() => {
@@ -159,6 +165,8 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     const expandedRef        = refWords.flatMap(w => expandSymbols(w).split(/\s+/).filter(Boolean))
     totalRef.current         = expandedRef.length
     matchedRef.current       = 0
+    confirmedRef.current     = 0
+    activeRef.current        = true
     refNormalizedRef.current = expandedRef.map(normalize)
     lastFinalTextRef.current = ''
     setMatchedCount(0)
@@ -189,16 +197,16 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
       const newText = msg.result.text?.trim()
       if (!newText) return
       lastFinalTextRef.current = (lastFinalTextRef.current + ' ' + newText).trim()
-      // Só varre as palavras novas a partir da posição já confirmada
-      _advance(newText.split(/\s+/).filter(Boolean))
+      // Resultado final confirmado — avança o cursor confirmado
+      _advance(newText.split(/\s+/).filter(Boolean), true)
     })
 
     recognizer.on('partialresult', (msg) => {
       if (msg.event !== 'partialresult') return
       const partial = msg.result.partial?.trim() ?? ''
       if (!partial) return
-      // Tenta avançar diretamente com as palavras do parcial atual
-      _advance(partial.split(/\s+/).filter(Boolean))
+      // Parcial: mostra progresso em tempo real mas parte sempre do cursor confirmado
+      _advance(partial.split(/\s+/).filter(Boolean), false)
     })
 
     const source    = ctx.createMediaStreamSource(stream)
@@ -233,13 +241,21 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   }, [])
 
   const stop = useCallback(() => {
+    // Congela no cursor confirmado antes do teardown para descartar
+    // qualquer parcial especulativo ou flush final do Vosk com silêncio/ruído
+    activeRef.current = false
+    const safe = confirmedRef.current
     _teardown()
+    matchedRef.current = safe
+    setMatchedCount(safe)
     setAudioLevel(0)
   }, [_teardown])
 
   const reset = useCallback(() => {
+    activeRef.current  = false
     _teardown()
-    matchedRef.current = 0
+    matchedRef.current   = 0
+    confirmedRef.current = 0
     setMatchedCount(0)
     setAudioLevel(0)
   }, [_teardown])
