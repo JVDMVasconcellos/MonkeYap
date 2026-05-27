@@ -1,5 +1,7 @@
 # MonkeYap
 
+[![Deploy with Vercel](https://vercel.com/button)](https://frontend-psi-bice-93.vercel.app)
+
 A MonkeyType-inspired oratory trainer for Portuguese speakers. Read texts aloud and get real-time word tracking with in-browser speech recognition. Scored on accuracy, fluency, completeness, rhythm and intonation.
 
 ---
