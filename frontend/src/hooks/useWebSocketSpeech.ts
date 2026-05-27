@@ -5,8 +5,8 @@ import { createModel, type KaldiRecognizer, type Model } from 'vosk-browser'
 // 100% offline (modelo cacheado pelo navegador após primeiro download).
 // Funciona em qualquer browser — não depende da Web Speech API.
 
-const SAMPLE_RATE      = 16000
-const BUFFER_SIZE      = 256   // 16ms @ 16kHz — máxima responsividade
+const SAMPLE_RATE        = 16000
+const BUFFER_SIZE        = 256  // 16ms @ 16kHz — máxima responsividade
 const SKIP_WINDOW      = 8     // janela para parciais (display especulativo)
 const CONFIRMED_SKIP   = 3     // janela para results finais (mais estrita)
 
@@ -137,7 +137,6 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   const _advance = (words: string[], confirmed: boolean) => {
     if (!activeRef.current) return
     const expanded  = words.flatMap(w => expandSymbols(w).split(/\s+/).filter(Boolean))
-    // Ambos partem de confirmedRef — parciais nunca "herdam" posição especulativa de outro parcial
     const skipWin   = confirmed ? CONFIRMED_SKIP : SKIP_WINDOW
     const newCursor = alignTranscript(expanded, refNormalizedRef.current, confirmedRef.current, skipWin)
     if (newCursor > matchedRef.current) _setMatched(newCursor)

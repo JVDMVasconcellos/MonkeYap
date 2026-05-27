@@ -10,8 +10,6 @@ import { useTheme } from './hooks/useTheme'
 import { useWebSocketSpeech } from './hooks/useWebSocketSpeech'
 import type { AppState, Category, EvaluationResult, TextItem, TimerMode } from './types'
 
-const VAD_AUTO_THRESH  = 0.015
-const VAD_AUTO_HOLD_MS = 200
 
 export default function App() {
   const [appState,   setAppState]   = useState<AppState>('idle')
@@ -123,56 +121,11 @@ export default function App() {
     void loadText(category)
   }, [category, speech, recorder, loadText])
 
-  // ── Auto-start: escuta mic no estado ready e dispara quando detectar voz ──
+  // ── Auto-start: começa a gravar assim que o texto está pronto ──
   useEffect(() => {
     if (appState !== 'ready' || !textItem || speech.modelLoading) return
-
-    let canceled = false
-    let stream: MediaStream | null = null
-    let ctx: AudioContext | null = null
-    let raf = 0
-
-    const cleanup = () => {
-      canceled = true
-      cancelAnimationFrame(raf)
-      ctx?.close().catch(() => {})
-      stream?.getTracks().forEach(t => t.stop())
-    }
-
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(s => {
-      if (canceled) { s.getTracks().forEach(t => t.stop()); return }
-      stream = s
-      ctx    = new AudioContext({ sampleRate: 16000 })
-      const source   = ctx.createMediaStreamSource(s)
-      const analyser = ctx.createAnalyser()
-      analyser.fftSize = 256
-      source.connect(analyser)
-      const buf = new Float32Array(analyser.fftSize)
-      let voiceStart = 0
-
-      const tick = () => {
-        if (canceled) return
-        analyser.getFloatTimeDomainData(buf)
-        const rms = Math.sqrt(buf.reduce((a, x) => a + x * x, 0) / buf.length)
-        if (rms > VAD_AUTO_THRESH) {
-          if (voiceStart === 0) voiceStart = Date.now()
-          if (Date.now() - voiceStart >= VAD_AUTO_HOLD_MS) {
-            cleanup()
-            void handleStart()
-            return
-          }
-        } else {
-          voiceStart = 0   // barulho rápido — zera o contador
-        }
-        {
-          raf = requestAnimationFrame(tick)
-        }
-      }
-      raf = requestAnimationFrame(tick)
-    }).catch(() => {})
-
-    return cleanup
-  }, [appState, textItem, handleStart, speech.modelLoading])
+    void handleStart()
+  }, [appState, textItem, speech.modelLoading, handleStart])
 
   // ── Atalhos de teclado ──
   useEffect(() => {
