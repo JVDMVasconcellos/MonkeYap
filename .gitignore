@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.env
+
+# Vosk models (download separately — large files)
+backend/models/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Reference repo (not our code)
+monkeytype/
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
