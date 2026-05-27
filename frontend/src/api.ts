@@ -1,46 +1,29 @@
+import { evaluate as localEvaluate } from './evaluator'
 import type { Category, EvaluationResult, TextItem } from './types'
 
-const BASE = '/api'
+const CATEGORIES: Category[] = [
+  { id: 'facil',     label: 'Fácil',    description: 'Textos simples e infantis',  color: '#00d084' },
+  { id: 'portugues', label: 'Português', description: 'Textos do dia a dia',        color: '#4a9eff' },
+  { id: 'se_manda',  label: 'Autores',   description: 'Textos complexos e formais', color: '#f7931a' },
+  { id: 'drummond',  label: 'Drummond',  description: 'Poemas brasileiros',         color: '#e94560' },
+]
 
 export async function fetchCategories(): Promise<Category[]> {
-  const res = await fetch(`${BASE}/categories`)
-  if (!res.ok) throw new Error('Falha ao carregar categorias')
-  return res.json()
+  return CATEGORIES
 }
 
 export async function fetchRandomText(categoryId: string): Promise<TextItem> {
-  const res = await fetch(`${BASE}/text/${categoryId}/random`)
-  if (!res.ok) throw new Error('Falha ao carregar texto')
-  return res.json()
+  const res = await fetch(`/texts/${categoryId}.json`)
+  if (!res.ok) throw new Error(`Categoria '${categoryId}' não encontrada`)
+  const texts: TextItem[] = await res.json()
+  return texts[Math.floor(Math.random() * texts.length)]
 }
 
 export async function evaluate(
   audioBlob: Blob,
-  refText:   string,
-  duration:  number,
+  refText: string,
+  duration: number,
+  transcript = '',
 ): Promise<EvaluationResult> {
-  const form = new FormData()
-  form.append('audio', audioBlob, 'recording.webm')
-  form.append('ref_text', refText)
-  form.append('duration', String(duration))
-
-  const res = await fetch(`${BASE}/evaluate`, { method: 'POST', body: form })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: 'Erro desconhecido' }))
-    throw new Error((err as { detail?: string }).detail ?? 'Falha na avaliação')
-  }
-  return res.json()
-}
-
-export async function checkWord(
-  wavBlob:  Blob,
-  expected: string,
-): Promise<{ recognized: string; correct: boolean }> {
-  const form = new FormData()
-  form.append('audio', wavBlob, 'word.wav')
-  form.append('expected', expected)
-
-  const res = await fetch(`${BASE}/check-word`, { method: 'POST', body: form })
-  if (!res.ok) throw new Error('Falha ao checar palavra')
-  return res.json()
+  return localEvaluate(transcript, refText, duration, audioBlob)
 }

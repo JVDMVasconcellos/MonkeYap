@@ -10,7 +10,7 @@ const BUFFER_SIZE        = 256  // 16ms @ 16kHz — máxima responsividade
 const SKIP_WINDOW      = 8     // janela para parciais (display especulativo)
 const CONFIRMED_SKIP   = 3     // janela para results finais (mais estrita)
 
-const MODEL_URL = '/api/model/vosk-pt.tar.gz'
+const MODEL_URL = '/models/vosk-pt.tar.gz'
 
 // ── Singleton: carrega modelo Vosk uma única vez por sessão de navegador ──
 let _modelPromise: Promise<Model> | null = null
@@ -83,6 +83,7 @@ interface UseWebSocketSpeechReturn {
   audioLevel:   number
   modelLoading: boolean
   modelError:   string | null
+  transcript:   string
   start:        (refWords: string[]) => Promise<void>
   stop:         () => void
   reset:        () => void
@@ -93,6 +94,7 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   const [audioLevel,   setAudioLevel]   = useState(0)
   const [modelLoading, setModelLoading] = useState(true)
   const [modelError,   setModelError]   = useState<string | null>(null)
+  const [transcript,   setTranscript]   = useState('')
 
   const ctxRef        = useRef<AudioContext | null>(null)
   const processorRef  = useRef<ScriptProcessorNode | null>(null)
@@ -170,6 +172,7 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     lastFinalTextRef.current = ''
     setMatchedCount(0)
     setAudioLevel(0)
+    setTranscript('')
 
     const model = modelRef.current
     if (!model) throw new Error('Modelo Vosk ainda não carregou')
@@ -196,6 +199,7 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
       const newText = msg.result.text?.trim()
       if (!newText) return
       lastFinalTextRef.current = (lastFinalTextRef.current + ' ' + newText).trim()
+      setTranscript(lastFinalTextRef.current)
       // Resultado final confirmado — avança o cursor confirmado
       _advance(newText.split(/\s+/).filter(Boolean), true)
     })
@@ -257,7 +261,8 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     confirmedRef.current = 0
     setMatchedCount(0)
     setAudioLevel(0)
+    setTranscript('')
   }, [_teardown])
 
-  return { matchedCount, audioLevel, modelLoading, modelError, start, stop, reset }
+  return { matchedCount, audioLevel, modelLoading, modelError, transcript, start, stop, reset }
 }

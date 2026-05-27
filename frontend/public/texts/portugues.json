@@ -1,0 +1,86 @@
+[
+  {
+    "id": "importancia-leitura",
+    "title": "A Importância da Leitura",
+    "text": "Ler é uma das atividades mais poderosas que o ser humano pode praticar. Por meio da leitura, ampliamos nosso vocabulário, desenvolvemos a capacidade de argumentação e viajamos por mundos que nunca poderíamos visitar de outra forma. Um livro bem lido pode mudar a perspectiva de vida de uma pessoa, abrir portas profissionais e cultivar a empatia ao nos colocar no lugar de personagens muito diferentes de nós. Estudos mostram que pessoas que leem regularmente possuem maior concentração, memória mais afiada e são mais criativas. Não é necessário ler horas por dia. Apenas quinze minutos de leitura diária já fazem uma diferença enorme ao longo do tempo.",
+    "author": null
+  },
+  {
+    "id": "cafe-da-manha",
+    "title": "O Café da Manhã Brasileiro",
+    "text": "O café da manhã brasileiro é uma das refeições mais ricas e variadas do mundo. Na mesa típica de uma família brasileira, não faltam pão com manteiga, queijo e presunto, frutas da estação, ovos de diferentes formas e, claro, o café com leite. Dependendo da região, o cardápio pode incluir tapioca no Nordeste, pão de queijo em Minas Gerais, cuscuz no interior paulista ou açaí no Norte. Essa variedade reflete a diversidade cultural e geográfica do país. O café da manhã não é apenas uma refeição, é um momento de reunir a família antes do dia começar.",
+    "author": null
+  },
+  {
+    "id": "historia-carnaval",
+    "title": "O Carnaval Brasileiro",
+    "text": "O carnaval é a maior festa popular do Brasil e uma das mais famosas do mundo. Ele acontece todos os anos antes da Quaresma e dura quatro dias de muita música, fantasia e alegria. No Rio de Janeiro, o desfile das escolas de samba na Marquês de Sapucaí é o ponto alto da festa, com carros alegóricos monumentais e fantasias elaboradas. Em Salvador, o axé e os trios elétricos dominam as ruas. Em Olinda e Recife, os frevo e os bonecos gigantes colorem o centro histórico. O carnaval é um mosaico de culturas que mostra o melhor da criatividade do povo brasileiro.",
+    "author": null
+  },
+  {
+    "id": "tecnologia-educacao",
+    "title": "Tecnologia na Educação",
+    "text": "A tecnologia transformou profundamente a forma como aprendemos. Hoje, qualquer pessoa com acesso à internet pode estudar os mais variados assuntos, de matemática avançada a idiomas estrangeiros, sem sair de casa. Plataformas de ensino a distância democratizaram o acesso ao conhecimento e permitiram que pessoas em regiões remotas tivessem acesso a cursos de alta qualidade. Por outro lado, essa avalanche de informação exige uma nova habilidade: saber filtrar o que é relevante e verificar a veracidade das fontes. O estudante do futuro precisa ser crítico, curioso e saber aprender de forma autônoma ao longo de toda a vida.",
+    "author": null
+  },
+  {
+    "id": "mata-atlantica",
+    "title": "A Mata Atlântica",
+    "text": "A Mata Atlântica é um dos biomas mais biodiversos e ameaçados do planeta. Originalmente cobria quase quinze por cento do território brasileiro, mas hoje restam apenas doze por cento de sua vegetação original. Apesar disso, ela ainda abriga cerca de vinte mil espécies de plantas, quatro mil espécies de vertebrados e inúmeros invertebrados, muitos dos quais são endêmicos, ou seja, não existem em nenhum outro lugar da Terra. Ela também é responsável pelo abastecimento de água de grande parte das cidades brasileiras. Preservar esse tesouro natural é uma responsabilidade de todos nós, tanto para o presente quanto para as futuras gerações.",
+    "author": null
+  },
+  {
+    "id": "futebol-brasil",
+    "title": "O Futebol no Brasil",
+    "text": "O futebol chegou ao Brasil no final do século dezenove trazido por Charles Miller, que voltou da Inglaterra com duas bolas e um livro de regras. O que era um esporte de elite logo se popularizou pelas ruas e campos de várzea de todo o país. O Brasil é o único país a ter participado de todas as edições da Copa do Mundo e o único a ter vencido o torneio cinco vezes. Nomes como Pelé, Garrincha, Zico, Romário, Ronaldo e Ronaldinho ficaram gravados na história do esporte. Mais do que um jogo, o futebol no Brasil é uma expressão cultural profunda que une pessoas de todas as classes e regiões.",
+    "author": null
+  },
+  {
+    "id": "saude-mental",
+    "title": "Saúde Mental no Século XXI",
+    "text": "Falar sobre saúde mental nunca foi tão necessário quanto agora. O estresse do cotidiano, as pressões profissionais e o uso excessivo das redes sociais têm contribuído para o aumento de casos de ansiedade e depressão em todo o mundo. A boa notícia é que o tema está cada vez menos cercado de tabu. Mais pessoas estão buscando ajuda terapêutica, praticando meditação e exercícios físicos e aprendendo a reconhecer seus próprios limites. Cuidar da mente é tão importante quanto cuidar do corpo. Dormir bem, ter relações afetivas saudáveis e reservar tempo para o lazer são atitudes simples que fazem enorme diferença na qualidade de vida.",
+    "author": null
+  },
+  {
+    "id": "amazonia",
+    "title": "A Floresta Amazônica",
+    "text": "A Amazônia é a maior floresta tropical do mundo e cobre mais de cinco milhões de quilômetros quadrados, abrangendo nove países da América do Sul. Só no Brasil ela ocupa mais da metade do território nacional. A floresta abriga mais de três milhões de espécies de plantas e animais, além de ser o lar de centenas de povos indígenas com línguas e culturas próprias. O Rio Amazonas, que corta a floresta de oeste a leste, é o maior rio do mundo em volume de água. A Amazônia regula o clima não só da América do Sul, mas do planeta inteiro, sendo chamada de pulmão do mundo. Sua preservação é uma das questões mais urgentes do nosso tempo.",
+    "author": null
+  },
+  {
+    "id": "culinaria-brasileira",
+    "title": "A Culinária Brasileira",
+    "text": "A culinária brasileira é um reflexo direto da mistura de culturas que formou o país. Da herança indígena vieram ingredientes como a mandioca, o milho e o guaraná. Os africanos trouxeram o dendê, o quiabo e técnicas de tempero que deram origem ao acarajé e à moqueca. Os portugueses contribuíram com o bacalhau, os doces de ovos e a tradição da carne assada. Cada região do Brasil desenvolveu pratos únicos: a feijoada no Rio, o baião de dois no Nordeste, o frango com pequi no Centro-Oeste, o pato no tucupi no Norte. Essa riqueza gastronômica é reconhecida internacionalmente e continua crescendo com a valorização dos ingredientes nativos.",
+    "author": null
+  },
+  {
+    "id": "bossa-nova",
+    "title": "A Bossa Nova",
+    "text": "A bossa nova nasceu no final dos anos cinquenta no Rio de Janeiro e mudou para sempre a história da música brasileira e mundial. Com João Gilberto, Tom Jobim e Vinícius de Moraes como seus maiores nomes, o movimento criou uma sonoridade suave, sofisticada e inovadora, que misturava o samba com elementos do jazz americano. A canção Garota de Ipanema, composta por Jobim e Vinícius, é uma das músicas mais gravadas de todos os tempos. A bossa nova conquistou o mundo inteiro e colocou o Brasil no mapa da música erudita. Seu legado continua vivo nas obras de artistas contemporâneos que seguem bebendo dessa fonte inesgotável de criatividade.",
+    "author": null
+  },
+  {
+    "id": "mudancas-climaticas",
+    "title": "Mudanças Climáticas",
+    "text": "As mudanças climáticas são um dos maiores desafios que a humanidade já enfrentou. O aumento da temperatura média do planeta, causado principalmente pela queima de combustíveis fósseis e pelo desmatamento, está provocando consequências graves em todo o mundo: derretimento das calotas polares, elevação do nível do mar, eventos climáticos extremos e perda de biodiversidade. Cientistas alertam que ainda há tempo para evitar os cenários mais catastróficos, mas as mudanças precisam ser profundas e urgentes. A transição para energias renováveis, a proteção das florestas e a mudança nos padrões de consumo são caminhos essenciais para garantir um futuro habitável para as próximas gerações.",
+    "author": null
+  },
+  {
+    "id": "historia-escrita",
+    "title": "A História da Escrita",
+    "text": "A escrita é uma das invenções mais importantes da história humana. Ela surgiu há cerca de cinco mil anos na Mesopotâmia, com os sumérios, que desenvolveram a escrita cuneiforme para registrar transações comerciais. Quase ao mesmo tempo, os egípcios criaram os hieróglifos. A escrita permitiu que o conhecimento fosse transmitido entre gerações sem depender da memória oral. Com ela, nasceram a história, a literatura, a ciência e o direito. O alfabeto que usamos hoje é descendente do fenício e passou pelos gregos e romanos antes de chegar até nós. A invenção da imprensa por Gutenberg, no século quinze, democratizou o acesso à palavra escrita e acelerou o desenvolvimento da humanidade.",
+    "author": null
+  },
+  {
+    "id": "inteligencia-artificial",
+    "title": "Inteligência Artificial",
+    "text": "A inteligência artificial deixou de ser ficção científica e se tornou parte do nosso dia a dia. Assistentes virtuais, sistemas de recomendação de filmes e músicas, diagnósticos médicos por imagem e carros autônomos são apenas alguns exemplos de como essa tecnologia já está presente em nossas vidas. Os avanços recentes em aprendizado de máquina permitiram que computadores aprendessem a reconhecer padrões em grandes volumes de dados com precisão surpreendente. Ao mesmo tempo, surgem questões éticas importantes: como garantir que esses sistemas sejam justos, transparentes e seguros? O desafio do nosso tempo é desenvolver a inteligência artificial de forma que ela amplíe as capacidades humanas sem substituir a criatividade, a empatia e o julgamento moral.",
+    "author": null
+  },
+  {
+    "id": "urbanizacao-brasil",
+    "title": "Urbanização no Brasil",
+    "text": "O Brasil é um dos países mais urbanizados do mundo. Hoje, mais de oitenta e cinco por cento da população vive em cidades, contra menos de trinta por cento em meados do século vinte. Esse processo acelerado de urbanização trouxe oportunidades, mas também desafios enormes. Grandes cidades como São Paulo e Rio de Janeiro enfrentam problemas sérios de mobilidade, habitação, saneamento e desigualdade. As periferias cresceram sem planejamento adequado, gerando favelas e bairros sem infraestrutura básica. Por outro lado, as cidades são centros de inovação, cultura e oportunidade econômica. Planejar o crescimento urbano de forma inteligente e inclusiva é uma das tarefas mais importantes para o Brasil do século vinte e um.",
+    "author": null
+  }
+]

@@ -95,7 +95,7 @@ export default function App() {
     const blob = await recorder.stopRecording()
     if (blob && textItem) {
       try {
-        const res = await evaluate(blob, textItem.text, duration)
+        const res = await evaluate(blob, textItem.text, duration, speech.transcript)
         setResults(res)
       } catch { /* ok */ }
     }
