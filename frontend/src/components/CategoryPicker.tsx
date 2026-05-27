@@ -28,11 +28,11 @@ export function CategoryPicker({
     [
       'font-mono text-sm px-4 py-1 rounded-lg transition-all duration-150',
       locked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-      active  ? 'bg-bg text-main' : 'text-sub hover:text-text',
+      active  ? 'pill-active' : 'pill-inactive',
     ].join(' ')
 
   return (
-    <div className="flex items-center gap-0.5 bg-panel/60 rounded-xl px-1.5 py-1 select-none">
+    <div className="flex items-center gap-0.5 pill-bar rounded-xl px-1.5 py-1 select-none">
       {/* Categories */}
       {categories.map(cat => (
         <button

@@ -148,3 +148,33 @@ header button {
   transition-duration: 0.1s;
   transition-timing-function: ease;
 }
+
+/* ── Pills temáticas (CategoryPicker / Header) ───────────── */
+.pill-bar {
+  background-color: color-mix(in srgb, var(--color-panel) 60%, transparent);
+}
+.pill-active {
+  background-color: var(--color-bg);
+  color: var(--color-main);
+}
+.pill-inactive {
+  color: var(--color-sub);
+}
+.pill-inactive:not(:disabled):hover {
+  color: var(--color-text);
+}
+.theme-dropdown {
+  background-color: var(--color-panel);
+  border-color: color-mix(in srgb, var(--color-border) 30%, transparent);
+}
+.theme-opt {
+  color: var(--color-sub);
+}
+.theme-opt:hover {
+  color: var(--color-text);
+  background-color: color-mix(in srgb, var(--color-bg) 50%, transparent);
+}
+.theme-opt-active {
+  color: var(--color-main);
+  background-color: var(--color-bg);
+}

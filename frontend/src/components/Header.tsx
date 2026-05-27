@@ -23,9 +23,14 @@ export function Header({ theme, setTheme }: Props) {
   return (
     <header className="w-full px-8 py-4 flex items-center justify-between shrink-0 relative">
       {/* ── Logo ── */}
-      <div className="flex items-center gap-3 select-none cursor-default">
-        <img src="/logo.png" alt="MonkeYap" className="h-7 w-7 object-contain" />
-        <span className="font-mono font-bold text-xl tracking-tight">
+      <div className="flex items-center gap-4 select-none cursor-default">
+        <img
+          src="/logo.png"
+          alt="MonkeYap"
+          className="h-14 w-14 object-contain transition-all duration-300"
+          style={{ filter: 'var(--logo-filter)' }}
+        />
+        <span className="font-mono font-bold text-3xl tracking-tight">
           <span style={{ color: 'var(--color-main)' }}>monke</span>
           <span style={{ color: 'var(--color-text)' }}>yap</span>
         </span>
@@ -53,8 +58,8 @@ export function Header({ theme, setTheme }: Props) {
         </button>
 
         {open && (
-          <div className="absolute top-10 right-0 bg-panel border border-border/30 rounded-2xl p-3 w-48 shadow-2xl z-50 animate-fade-in">
-            <p className="text-sub text-xs font-mono uppercase tracking-widest mb-2 px-1">tema</p>
+          <div className="absolute top-10 right-0 theme-dropdown border rounded-2xl p-3 w-48 shadow-2xl z-50 animate-fade-in">
+            <p className="font-mono text-xs uppercase tracking-widest mb-2 px-1" style={{ color: 'var(--color-sub)' }}>tema</p>
             <div className="space-y-0.5">
               {THEMES.map(t => (
                 <button
@@ -62,7 +67,7 @@ export function Header({ theme, setTheme }: Props) {
                   onClick={() => { setTheme(t.id); setOpen(false) }}
                   className={[
                     'w-full flex items-center gap-3 px-3 py-2 rounded-xl font-mono text-sm transition-all duration-150 cursor-pointer',
-                    theme === t.id ? 'text-main bg-bg' : 'text-sub hover:text-text hover:bg-bg/50',
+                    theme === t.id ? 'theme-opt-active' : 'theme-opt',
                   ].join(' ')}
                 >
                   <span
