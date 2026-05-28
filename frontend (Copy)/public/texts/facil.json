@@ -1,0 +1,80 @@
+[
+  {
+    "id": "lebre-tartaruga",
+    "title": "A Lebre e a Tartaruga",
+    "text": "Era uma vez uma lebre muito orgulhosa que vivia se gabando de ser a mais rápida de toda a floresta. Um dia, ela desafiou a tartaruga para uma corrida. Todos os animais foram assistir. A lebre saiu disparada e logo estava muito à frente. Pensando que tinha tempo de sobra, ela decidiu descansar um pouco debaixo de uma árvore. Enquanto isso, a tartaruga continuou andando devagar, sem parar. Quando a lebre acordou, a tartaruga já estava quase chegando na linha de chegada. A lebre correu o mais rápido que pôde, mas era tarde demais. A tartaruga venceu a corrida. A pressa às vezes atrapalha. Quem vai devagar, chega mais longe.",
+    "author": "Esopo"
+  },
+  {
+    "id": "cigarra-formiga",
+    "title": "A Cigarra e a Formiga",
+    "text": "Durante o verão, a cigarra cantava o dia inteiro enquanto a formiga trabalhava duro, guardando comida para o inverno. A cigarra ria da formiga e dizia que ela estava perdendo tempo. Quando o inverno chegou, a cigarra ficou com fome e foi pedir comida à formiga. A formiga perguntou o que ela tinha feito durante o verão. A cigarra respondeu que tinha cantado. A formiga disse que quem canta no verão, dança no inverno. Mas a formiga, sendo bondosa, dividiu um pouco de sua comida e pediu que a cigarra aprendesse a lição.",
+    "author": "Esopo"
+  },
+  {
+    "id": "chapeuzinho",
+    "title": "Chapeuzinho Vermelho",
+    "text": "Era uma vez uma menina chamada Chapeuzinho Vermelho. Sua avó estava doente e ela foi levá-la uma cesta de comida. No caminho, encontrou o Lobo Mau. O lobo perguntou para onde ela ia e ela contou tudo. O lobo correu pela trilha mais curta, chegou primeiro e se disfarçou de vovó. Quando Chapeuzinho chegou, estranhou tudo. Os olhos da vovó eram grandes demais. Os ouvidos eram grandes demais. E a boca era enorme. Era o lobo! Mas o caçador ouviu os gritos e chegou a tempo de salvar as duas. Desde então, Chapeuzinho nunca mais conversou com estranhos.",
+    "author": "Charles Perrault"
+  },
+  {
+    "id": "patinho-feio",
+    "title": "O Patinho Feio",
+    "text": "No ninho de uma pata nasceram vários filhotes. Um deles era diferente dos outros, maior e mais feio. Todos zombavam dele e ele ficou muito triste. O patinho foi embora e passou o inverno sozinho. Na primavera, ele viu na água o reflexo de um belo cisne branco. Era ele mesmo! Ele tinha crescido e se transformado em um cisne magnífico. Os outros cisnes o acolheram com carinho. Ele entendeu que ser diferente não é desvantagem. O que parece imperfeição hoje pode ser beleza amanhã.",
+    "author": "Hans Christian Andersen"
+  },
+  {
+    "id": "tres-porquinhos",
+    "title": "Os Três Porquinhos",
+    "text": "Três porquinhos saíram para construir suas casas. O primeiro construiu uma casa de palha muito rápido e foi brincar. O segundo construiu uma casa de madeira e também foi se divertir. O terceiro trabalhou muito e construiu uma casa de tijolos. O lobo chegou e soprou a casa de palha e ela caiu. Soprou a de madeira e ela caiu também. Os dois irmãos correram para a casa de tijolos. O lobo soprou, soprou e soprou, mas a casa não caiu. No final, os três porquinhos ficaram seguros. Quem trabalha bem desde o começo não precisa se preocupar depois.",
+    "author": "Folclore europeu"
+  },
+  {
+    "id": "pinoquio",
+    "title": "Pinóquio",
+    "text": "Gepeto era um marceneiro que fez um boneco de madeira e o chamou de Pinóquio. Uma fada boa deu vida ao boneco. Pinóquio tinha um problema: toda vez que mentia, seu nariz crescia. A fada lhe disse que se fosse um menino bom e honesto, um dia se tornaria de verdade um menino de carne e osso. Pinóquio passou por muitas aventuras e aprendeu que a mentira sempre aparece. No final, depois de muito sofrimento e aprendizado, a fada cumpriu sua promessa. Pinóquio virou um menino de verdade. A honestidade é o caminho mais curto para a felicidade.",
+    "author": "Carlo Collodi"
+  },
+  {
+    "id": "soldadinho-chumbo",
+    "title": "O Soldadinho de Chumbo",
+    "text": "Entre os brinquedos de uma criança havia vinte e cinco soldadinhos de chumbo, todos feitos do mesmo pedaço de metal. Mas o último ficou com apenas uma perna, pois o chumbo não foi suficiente. Mesmo assim, ele ficou em posição de sentido como os outros. Na prateleira em frente havia uma bailarina de papel que dançava na ponta de um pé. O soldadinho pensou que ela só tinha uma perna também e se apaixonou por ela. Ele passou por muitas aventuras e perigos, mas seu coração nunca mudou. A coragem e o amor verdadeiro resistem a tudo.",
+    "author": "Hans Christian Andersen"
+  },
+  {
+    "id": "rapunzel",
+    "title": "Rapunzel",
+    "text": "Era uma vez uma menina de cabelos longos e dourados chamada Rapunzel. Ela vivia presa em uma torre altíssima no meio da floresta, sem porta nem escada. Uma bruxa malvada a mantinha lá. Todo dia a bruxa gritava: Rapunzel, Rapunzel, jogue seus cabelos! E Rapunzel jogava suas tranças pela janela para a bruxa subir. Um dia um príncipe passou pela floresta e ouviu a voz linda de Rapunzel cantando. Ele aprendeu o segredo e subiu pela trança. Os dois se apaixonaram e fugiram juntos. E viveram felizes para sempre.",
+    "author": "Irmãos Grimm"
+  },
+  {
+    "id": "bela-adormecida",
+    "title": "A Bela Adormecida",
+    "text": "Uma princesa nasceu e as fadas foram chamadas para abençoá-la. Mas uma fada malvada lançou um feitiço: no dia em que a princesa tocasse um fuso, cairia num sono profundo. O rei mandou queimar todos os fusos do reino. Mas quando a princesa fez quinze anos, encontrou um fuso escondido e se picou. Ela e todo o castelo adormeceram. Cem anos depois, um príncipe corajoso atravessou a floresta encantada, entrou no castelo e acordou a princesa com um beijo. Todo o castelo despertou junto com ela.",
+    "author": "Charles Perrault"
+  },
+  {
+    "id": "corvo-raposa",
+    "title": "O Corvo e a Raposa",
+    "text": "Um corvo encontrou um pedaço de queijo e pousou em um galho para comê-lo. Uma raposa viu o queijo e ficou com água na boca. Ela disse ao corvo que tinha ouvido falar de sua bela voz e pediu para ele cantar uma canção. O corvo, orgulhoso, abriu o bico para cantar. O queijo caiu no chão e a raposa o pegou correndo. O corvo ficou sem o queijo e ainda se sentiu tolo. Quem não resiste à vaidade pode perder o que tem de mais valioso.",
+    "author": "Esopo"
+  },
+  {
+    "id": "joao-pe-feijao",
+    "title": "João e o Pé de Feijão",
+    "text": "João era um menino pobre que vendeu a vaca da família por um punhado de feijões mágicos. Sua mãe ficou furiosa e jogou os feijões pela janela. Na manhã seguinte, havia um enorme pé de feijão que subia até as nuvens. João subiu e encontrou um castelo habitado por um gigante. Lá havia uma galinha que botava ovos de ouro. João pegou a galinha e desceu correndo. O gigante correu atrás, mas João cortou o pé de feijão com um machado e o gigante caiu. João e sua mãe nunca mais passaram necessidade.",
+    "author": "Folclore inglês"
+  },
+  {
+    "id": "saci-perere",
+    "title": "O Saci-Pererê",
+    "text": "O Saci-Pererê é um dos personagens mais famosos do folclore brasileiro. Ele é um menino negro de uma perna só que usa um gorro vermelho e vive fumando cachimbo. É impossível pegá-lo, pois ele some e aparece em lugares diferentes em um piscar de olhos. Dizem que ele vive aprontando travessuras: embaraça o cabelo das crianças enquanto dormem, azeda o leite, esconde objetos e assusta os animais. Para se proteger do Saci, basta jogar uma peneira no chão, pois ele ficará tentando contar os buracos até o amanhecer.",
+    "author": "Folclore brasileiro"
+  },
+  {
+    "id": "curupira",
+    "title": "O Curupira",
+    "text": "O Curupira é um ser fantástico do folclore brasileiro que vive nas matas para protegê-las. Ele tem o corpo de um menino, cabelos vermelhos e os pés virados para trás. Isso confunde os caçadores, que seguem suas pegadas pensando que ele vai para um lado quando na verdade está indo para o outro. O Curupira protege os animais e as árvores. Quem entrar na floresta para caçar sem necessidade ou desmatar sem respeito será perdido por ele para sempre. Mas quem respeitar a natureza não tem nada a temer.",
+    "author": "Folclore brasileiro"
+  }
+]

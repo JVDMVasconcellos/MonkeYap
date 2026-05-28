@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Temas ─────────────────────────────────────────────── */
+:root,
+[data-theme="monkeyap"] {
+  --color-bg-rgb:     57 54 52;
+  --color-panel-rgb:  44 46 49;
+  --color-border-rgb: 58 60 63;
+  --color-main-rgb:   226 183 20;
+  --color-sub-rgb:    100 102 105;
+  --color-text-rgb:   209 208 197;
+  --color-error-rgb:  202 71 84;
+  --color-bg:    #393634;
+  --color-main:  #e2b714;
+  --color-sub:   #646669;
+  --color-text:  #d1d0c5;
+  --color-error: #ca4754;
+}
+
+[data-theme="oceano"] {
+  --color-bg-rgb:     30 40 55;
+  --color-panel-rgb:  22 32 46;
+  --color-border-rgb: 42 53 72;
+  --color-main-rgb:   91 156 246;
+  --color-sub-rgb:    74 101 128;
+  --color-text-rgb:   200 216 234;
+  --color-error-rgb:  224 82 82;
+  --color-bg:    #1e2837;
+  --color-main:  #5b9cf6;
+  --color-sub:   #4a6580;
+  --color-text:  #c8d8ea;
+  --color-error: #e05252;
+}
+
+[data-theme="floresta"] {
+  --color-bg-rgb:     26 42 30;
+  --color-panel-rgb:  20 34 26;
+  --color-border-rgb: 37 61 44;
+  --color-main-rgb:   82 193 125;
+  --color-sub-rgb:    74 109 83;
+  --color-text-rgb:   197 224 204;
+  --color-error-rgb:  224 82 82;
+  --color-bg:    #1a2a1e;
+  --color-main:  #52c17d;
+  --color-sub:   #4a6d53;
+  --color-text:  #c5e0cc;
+  --color-error: #e05252;
+}
+
+[data-theme="areia"] {
+  --color-bg-rgb:     242 237 230;
+  --color-panel-rgb:  230 221 211;
+  --color-border-rgb: 208 196 181;
+  --color-main-rgb:   192 123 58;
+  --color-sub-rgb:    138 116 104;
+  --color-text-rgb:   44 36 22;
+  --color-error-rgb:  192 57 43;
+  --color-bg:    #f2ede6;
+  --color-main:  #c07b3a;
+  --color-sub:   #8a7468;
+  --color-text:  #2c2416;
+  --color-error: #c0392b;
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--color-bg);
+  color:            var(--color-text);
+  font-family:      'Roboto Mono', 'JetBrains Mono', monospace;
+  margin:           0;
+  min-height:       100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-main) 30%, transparent);
+  color: var(--color-text);
+}
+
+#root {
+  min-height: 100vh;
+  display:    flex;
+  flex-direction: column;
+}
+
+/* Monkeytype-style no scrollbar */
+::-webkit-scrollbar { width: 0; height: 0; }
+* { scrollbar-width: none; }
+
+/* Monkeytype header link style */
+header a,
+header button {
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+/* ── Caret ──────────────────────────────────────────────── */
+@keyframes caretFlash {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.caret-blink {
+  position:         absolute;
+  left:             -2px;
+  top:              2px;
+  bottom:           2px;
+  width:            2px;
+  background-color: var(--color-main);
+  border-radius:    1px;
+  animation:        caretFlash 1s ease-in-out infinite;
+}
+
+/* ── Recording glow ─────────────────────────────────────── */
+@keyframes recordPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--color-main) 13%, transparent),
+      0 0 18px 3px color-mix(in srgb, var(--color-main) 6%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--color-main) 30%, transparent),
+      0 0 32px 8px color-mix(in srgb, var(--color-main) 13%, transparent);
+  }
+}
+.recording-glow {
+  border-radius: 0.75rem;
+  animation:     recordPulse 2s ease-in-out infinite;
+}
+
+/* ── Score bar ──────────────────────────────────────────── */
+@keyframes barFill {
+  from { width: 0%; }
+  to   { width: var(--target-width); }
+}
+.score-bar-fill {
+  animation: barFill 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* ── Transitions para troca de tema ─────────────────────── */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.1s;
+  transition-timing-function: ease;
+}
+
+/* ── Pills temáticas (CategoryPicker / Header) ───────────── */
+.pill-bar {
+  background-color: color-mix(in srgb, var(--color-panel) 60%, transparent);
+}
+.pill-active {
+  background-color: var(--color-bg);
+  color: var(--color-main);
+}
+.pill-inactive {
+  color: var(--color-sub);
+}
+.pill-inactive:not(:disabled):hover {
+  color: var(--color-text);
+}
+.theme-dropdown {
+  background-color: var(--color-panel);
+  border-color: color-mix(in srgb, var(--color-border) 30%, transparent);
+}
+.theme-opt {
+  color: var(--color-sub);
+}
+.theme-opt:hover {
+  color: var(--color-text);
+  background-color: color-mix(in srgb, var(--color-bg) 50%, transparent);
+}
+.theme-opt-active {
+  color: var(--color-main);
+  background-color: var(--color-bg);
+}
