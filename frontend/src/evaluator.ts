@@ -77,6 +77,14 @@ function jaroWinkler(s1: string, s2: string): number {
 
 // ── Word diff (greedy alignment) ─────────────────────────────────────────────
 
+const FUZZY_THRESHOLD = 0.85
+
+function wordMatch(ref: string, spoken: string): boolean {
+  if (ref === spoken) return true
+  if (Math.abs(ref.length - spoken.length) > 4) return false
+  return jaroWinkler(ref, spoken) >= FUZZY_THRESHOLD
+}
+
 function buildWordDiff(refText: string, refNorm: string[], spokenNorm: string[]): WordDiff[] {
   const rawWords = refText.split(/\s+/).filter(Boolean)
   const status = new Array<'ok' | 'missing'>(refNorm.length).fill('missing')
@@ -85,7 +93,7 @@ function buildWordDiff(refText: string, refNorm: string[], spokenNorm: string[])
     if (pos >= refNorm.length) break
     const limit = Math.min(pos + SKIP_WINDOW, refNorm.length)
     for (let i = pos; i < limit; i++) {
-      if (refNorm[i] === w) { status[i] = 'ok'; pos = i + 1; break }
+      if (wordMatch(refNorm[i], w)) { status[i] = 'ok'; pos = i + 1; break }
     }
   }
   return rawWords.slice(0, refNorm.length).map((word, i) => ({ word, status: status[i] }))
@@ -94,8 +102,9 @@ function buildWordDiff(refText: string, refNorm: string[], spokenNorm: string[])
 function computeDiff(refText: string, refNorm: string[], spokenNorm: string[]) {
   const wordDiff = buildWordDiff(refText, refNorm, spokenNorm)
   const missing = refNorm.filter((_, i) => wordDiff[i]?.status === 'missing')
-  const refSet = new Set(refNorm)
-  const added = spokenNorm.filter(w => !refSet.has(w) && !FILLER_WORDS.has(w))
+  const added = spokenNorm.filter(w =>
+    !FILLER_WORDS.has(w) && !refNorm.some(r => wordMatch(r, w))
+  )
   return { wordDiff, missing, added }
 }
 

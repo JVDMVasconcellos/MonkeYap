@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createModel, type KaldiRecognizer, type Model } from 'vosk-browser'
 
-// Sincronização real via Vosk WASM rodando no browser.
-// 100% offline (modelo cacheado pelo navegador após primeiro download).
-// Funciona em qualquer browser — não depende da Web Speech API.
-
-const SAMPLE_RATE        = 16000
-const BUFFER_SIZE        = 256  // 16ms @ 16kHz — máxima responsividade
-const SKIP_WINDOW      = 8     // janela para parciais (display especulativo)
-const CONFIRMED_SKIP   = 3     // janela para results finais (mais estrita)
+const SAMPLE_RATE      = 16000
+const BUFFER_SIZE      = 256
+const SKIP_WINDOW      = 8
+const CONFIRMED_SKIP   = 3
 
 const MODEL_URL = '/models/vosk-pt.tar.gz'
 
-// ── Singleton: carrega modelo Vosk uma única vez por sessão de navegador ──
+// ── Detect Web Speech API (Chrome, Edge, Safari, Brave, Opera — not Firefox) ──
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const NativeSRCtor: (new () => any) | null =
+  typeof window !== 'undefined'
+    ? ((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition ?? null)
+    : null
+
+// ── Singleton: Vosk model (only loaded when NativeSR is unavailable) ──
 let _modelPromise: Promise<Model> | null = null
 
 function loadModel(): Promise<Model> {
@@ -60,8 +63,6 @@ function normalize(s: string): string {
   return DIGIT_TO_WORD[base] ?? base
 }
 
-// Alinha transcript falado com texto de referência a partir de startFrom.
-// Matching guloso + janela de skip pra tolerar palavras não reconhecidas.
 function alignTranscript(spokenWords: string[], refNormalized: string[], startFrom: number, skipWindow = SKIP_WINDOW): number {
   let pos = startFrom
   for (const raw of spokenWords) {
@@ -92,27 +93,36 @@ interface UseWebSocketSpeechReturn {
 export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   const [matchedCount, setMatchedCount] = useState(0)
   const [audioLevel,   setAudioLevel]   = useState(0)
-  const [modelLoading, setModelLoading] = useState(true)
+  // Vosk requires a loading phase; Web Speech API is instant
+  const [modelLoading, setModelLoading] = useState(NativeSRCtor === null)
   const [modelError,   setModelError]   = useState<string | null>(null)
   const [transcript,   setTranscript]   = useState('')
 
-  const ctxRef        = useRef<AudioContext | null>(null)
+  // Shared refs
+  const activeRef        = useRef(false)
+  const totalRef         = useRef(0)
+  const matchedRef       = useRef(0)
+  const confirmedRef     = useRef(0)
+  const refNormalizedRef = useRef<string[]>([])
+  const lastFinalTextRef = useRef('')
+  const rafRef           = useRef(0)
+
+  // Audio level refs (used by both engines)
+  const ctxRef    = useRef<AudioContext | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+
+  // Vosk-specific refs
   const processorRef  = useRef<ScriptProcessorNode | null>(null)
-  const streamRef     = useRef<MediaStream | null>(null)
-  const rafRef        = useRef(0)
   const recognizerRef = useRef<KaldiRecognizer | null>(null)
   const modelRef      = useRef<Model | null>(null)
 
-  const totalRef           = useRef(0)
-  const matchedRef         = useRef(0)
-  const confirmedRef       = useRef(0)   // só avança em eventos `result` (finais confirmados)
-  const activeRef          = useRef(false)
-  const refNormalizedRef   = useRef<string[]>([])
-  const lastFinalTextRef   = useRef('')
-  const pendingTimersRef   = useRef<ReturnType<typeof setTimeout>[]>([])
+  // Web Speech API ref
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nativeSRRef = useRef<any>(null)
 
-  // Pré-carrega o modelo no mount para evitar delay no start
+  // Only preload Vosk when Web Speech API is unavailable (Firefox)
   useEffect(() => {
+    if (NativeSRCtor !== null) return
     let canceled = false
     loadModel()
       .then(m => {
@@ -146,23 +156,30 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   }
 
   const _teardown = useCallback(() => {
-    pendingTimersRef.current.forEach(clearTimeout)
-    pendingTimersRef.current = []
     cancelAnimationFrame(rafRef.current)
+
+    // Web Speech API teardown
+    if (nativeSRRef.current) {
+      nativeSRRef.current.onend = null
+      nativeSRRef.current.abort()
+      nativeSRRef.current = null
+    }
+
+    // Vosk teardown
     processorRef.current?.disconnect()
     processorRef.current = null
+    try { recognizerRef.current?.remove() } catch { /* ok */ }
+    recognizerRef.current = null
+
+    // Common teardown
     ctxRef.current?.close().catch(() => {})
     ctxRef.current = null
     streamRef.current?.getTracks().forEach(t => t.stop())
     streamRef.current = null
-
-    try { recognizerRef.current?.remove() } catch { /* ok */ }
-    recognizerRef.current = null
     lastFinalTextRef.current = ''
   }, [])
 
   const start = useCallback(async (refWords: string[]) => {
-    // Expande símbolos antes de normalizar (ex: "%" → ["por", "cento"])
     const expandedRef        = refWords.flatMap(w => expandSymbols(w).split(/\s+/).filter(Boolean))
     totalRef.current         = expandedRef.length
     matchedRef.current       = 0
@@ -174,78 +191,127 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     setAudioLevel(0)
     setTranscript('')
 
-    const model = modelRef.current
-    if (!model) throw new Error('Modelo Vosk ainda não carregou')
+    if (NativeSRCtor) {
+      // ── Web Speech API (Chrome, Edge, Safari, Brave…) ──
+      // Get mic stream only for audio level visualization
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+        video: false,
+      })
+      streamRef.current = stream
+      const ctx = new AudioContext({ sampleRate: SAMPLE_RATE })
+      ctxRef.current = ctx
+      const source   = ctx.createMediaStreamSource(stream)
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 256
+      source.connect(analyser)
+      const buf = new Float32Array(analyser.fftSize)
+      const tick = () => {
+        analyser.getFloatTimeDomainData(buf)
+        const rms = Math.sqrt(buf.reduce((s, x) => s + x * x, 0) / buf.length)
+        setAudioLevel(Math.min(rms * 10, 1))
+        rafRef.current = requestAnimationFrame(tick)
+      }
+      rafRef.current = requestAnimationFrame(tick)
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
-      video: false,
-    })
-    streamRef.current = stream
+      // Start recognition
+      const sr          = new NativeSRCtor()
+      sr.continuous     = true
+      sr.interimResults = true
+      sr.lang           = 'pt-BR'
+      nativeSRRef.current = sr
 
-    const ctx = new AudioContext({ sampleRate: SAMPLE_RATE })  // 16kHz nativo — sem reamostração
-    ctxRef.current = ctx
+      sr.onresult = (event: any) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i]
+          const text   = result[0].transcript.trim()
+          if (!text) continue
+          if (result.isFinal) {
+            lastFinalTextRef.current = (lastFinalTextRef.current + ' ' + text).trim()
+            setTranscript(lastFinalTextRef.current)
+            _advance(text.split(/\s+/).filter(Boolean), true)
+          } else {
+            _advance(text.split(/\s+/).filter(Boolean), false)
+          }
+        }
+      }
 
-    // Grammar mode: só reconhece palavras do texto (muito mais rápido e preciso).
-    const uniqueWords = Array.from(new Set(refNormalizedRef.current.filter(Boolean)))
-    const grammar     = JSON.stringify([...uniqueWords, '[unk]'])
+      sr.onerror = (event: any) => {
+        if (event.error === 'no-speech') return // normal during pauses
+        console.warn('SpeechRecognition error:', event.error)
+      }
 
-    const recognizer = new model.KaldiRecognizer(SAMPLE_RATE, grammar)
-    recognizer.setWords(true)
-    recognizerRef.current = recognizer
+      // Chrome stops recognition after ~60s of silence — restart automatically
+      sr.onend = () => { if (activeRef.current) sr.start() }
 
-    recognizer.on('result', (msg) => {
-      if (msg.event !== 'result') return
-      const newText = msg.result.text?.trim()
-      if (!newText) return
-      lastFinalTextRef.current = (lastFinalTextRef.current + ' ' + newText).trim()
-      setTranscript(lastFinalTextRef.current)
-      // Resultado final confirmado — avança o cursor confirmado
-      _advance(newText.split(/\s+/).filter(Boolean), true)
-    })
+      sr.start()
+    } else {
+      // ── Vosk WASM (Firefox fallback) ──
+      const model = modelRef.current
+      if (!model) throw new Error('Modelo Vosk ainda não carregou')
 
-    recognizer.on('partialresult', (msg) => {
-      if (msg.event !== 'partialresult') return
-      const partial = msg.result.partial?.trim() ?? ''
-      if (!partial) return
-      // Parcial: mostra progresso em tempo real mas parte sempre do cursor confirmado
-      _advance(partial.split(/\s+/).filter(Boolean), false)
-    })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+        video: false,
+      })
+      streamRef.current = stream
 
-    const source    = ctx.createMediaStreamSource(stream)
-    const processor = ctx.createScriptProcessor(BUFFER_SIZE, 1, 1)
-    processorRef.current = processor
+      const ctx = new AudioContext({ sampleRate: SAMPLE_RATE })
+      ctxRef.current = ctx
 
-    const analyser  = ctx.createAnalyser()
-    analyser.fftSize = 256
-    source.connect(analyser)
+      const uniqueWords = Array.from(new Set(refNormalizedRef.current.filter(Boolean)))
+      const grammar     = JSON.stringify([...uniqueWords, '[unk]'])
 
-    const silencer      = ctx.createGain()
-    silencer.gain.value = 0
-    source.connect(processor)
-    processor.connect(silencer)
-    silencer.connect(ctx.destination)
+      const recognizer = new model.KaldiRecognizer(SAMPLE_RATE, grammar)
+      recognizer.setWords(true)
+      recognizerRef.current = recognizer
 
-    // Nível de áudio
-    const levelBuf = new Float32Array(analyser.fftSize)
-    const tickLevel = () => {
-      analyser.getFloatTimeDomainData(levelBuf)
-      const rms = Math.sqrt(levelBuf.reduce((s, x) => s + x * x, 0) / levelBuf.length)
-      setAudioLevel(Math.min(rms * 10, 1))
-      rafRef.current = requestAnimationFrame(tickLevel)
-    }
-    rafRef.current = requestAnimationFrame(tickLevel)
+      recognizer.on('result', (msg) => {
+        if (msg.event !== 'result') return
+        const newText = msg.result.text?.trim()
+        if (!newText) return
+        lastFinalTextRef.current = (lastFinalTextRef.current + ' ' + newText).trim()
+        setTranscript(lastFinalTextRef.current)
+        _advance(newText.split(/\s+/).filter(Boolean), true)
+      })
 
-    processor.onaudioprocess = (e) => {
-      try {
-        recognizer.acceptWaveform(e.inputBuffer)
-      } catch { /* ignora chunks ruins */ }
+      recognizer.on('partialresult', (msg) => {
+        if (msg.event !== 'partialresult') return
+        const partial = msg.result.partial?.trim() ?? ''
+        if (!partial) return
+        _advance(partial.split(/\s+/).filter(Boolean), false)
+      })
+
+      const source    = ctx.createMediaStreamSource(stream)
+      const processor = ctx.createScriptProcessor(BUFFER_SIZE, 1, 1)
+      processorRef.current = processor
+
+      const analyser  = ctx.createAnalyser()
+      analyser.fftSize = 256
+      source.connect(analyser)
+
+      const silencer      = ctx.createGain()
+      silencer.gain.value = 0
+      source.connect(processor)
+      processor.connect(silencer)
+      silencer.connect(ctx.destination)
+
+      const buf = new Float32Array(analyser.fftSize)
+      const tick = () => {
+        analyser.getFloatTimeDomainData(buf)
+        const rms = Math.sqrt(buf.reduce((s, x) => s + x * x, 0) / buf.length)
+        setAudioLevel(Math.min(rms * 10, 1))
+        rafRef.current = requestAnimationFrame(tick)
+      }
+      rafRef.current = requestAnimationFrame(tick)
+
+      processor.onaudioprocess = (e) => {
+        try { recognizer.acceptWaveform(e.inputBuffer) } catch { /* ignora chunks ruins */ }
+      }
     }
   }, [])
 
   const stop = useCallback(() => {
-    // Congela no cursor confirmado antes do teardown para descartar
-    // qualquer parcial especulativo ou flush final do Vosk com silêncio/ruído
     activeRef.current = false
     const safe = confirmedRef.current
     _teardown()
