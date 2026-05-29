@@ -323,13 +323,26 @@ export default function App() {
 
       {/* ── Footer ── */}
       <footer className="shrink-0 py-4 flex justify-center gap-8 font-mono text-sm" style={{ color: 'var(--color-sub)' }}>
-        <span>
-          <span style={{ color: 'var(--color-text)' }}>tab</span>{' '}— novo texto
-        </span>
+        {category && (
+          <button
+            onClick={() => { if (appState === 'recording') handleCancelAndNew(); else if (appState !== 'analyzing') void handleNewText() }}
+            disabled={appState === 'analyzing'}
+            className="cursor-pointer transition-colors duration-150 disabled:opacity-40 disabled:cursor-default"
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-text)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
+          >
+            <span style={{ color: 'var(--color-text)' }}>tab</span>{' '}— novo texto
+          </button>
+        )}
         {isRecording && (
-          <span>
+          <button
+            onClick={() => void handleStop()}
+            className="cursor-pointer transition-colors duration-150"
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-text)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
+          >
             <span style={{ color: 'var(--color-text)' }}>esc</span>{' '}— parar
-          </span>
+          </button>
         )}
       </footer>
     </div>
