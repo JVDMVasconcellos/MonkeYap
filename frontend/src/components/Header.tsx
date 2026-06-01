@@ -3,11 +3,12 @@ import { THEMES } from '../hooks/useTheme'
 import type { ThemeId } from '../hooks/useTheme'
 
 interface Props {
-  theme:    ThemeId
-  setTheme: (t: ThemeId) => void
+  theme:        ThemeId
+  setTheme:     (t: ThemeId) => void
+  onShowHistory: () => void
 }
 
-export function Header({ theme, setTheme }: Props) {
+export function Header({ theme, setTheme, onShowHistory }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const current = THEMES.find(t => t.id === theme)!
@@ -38,6 +39,13 @@ export function Header({ theme, setTheme }: Props) {
 
       {/* ── Nav direita ── */}
       <div ref={ref} className="relative flex items-center gap-1">
+        <button
+          onClick={onShowHistory}
+          title="Histórico"
+          className="flex items-center px-3 py-1.5 rounded-lg font-mono text-sm transition-colors duration-150 cursor-pointer text-sub hover:text-text"
+        >
+          <HistoryIcon />
+        </button>
         <button
           onClick={() => setOpen(o => !o)}
           title="Temas"
@@ -86,6 +94,16 @@ export function Header({ theme, setTheme }: Props) {
         )}
       </div>
     </header>
+  )
+}
+
+function HistoryIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="12 8 12 12 14 14" />
+      <path d="M3.05 11a9 9 0 1 1 .5 4" />
+      <polyline points="3 16 3 11 8 11" />
+    </svg>
   )
 }
 

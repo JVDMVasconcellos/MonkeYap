@@ -104,7 +104,8 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   const matchedRef       = useRef(0)
   const confirmedRef     = useRef(0)
   const refNormalizedRef = useRef<string[]>([])
-  const lastFinalTextRef = useRef('')
+  const lastFinalTextRef   = useRef('')
+  const lastPartialTextRef = useRef('')
   const rafRef           = useRef(0)
 
   // Audio level refs (used by both engines)
@@ -176,7 +177,8 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     ctxRef.current = null
     streamRef.current?.getTracks().forEach(t => t.stop())
     streamRef.current = null
-    lastFinalTextRef.current = ''
+    lastFinalTextRef.current   = ''
+    lastPartialTextRef.current = ''
   }, [])
 
   const start = useCallback(async (refWords: string[]) => {
@@ -227,10 +229,16 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
           const text   = result[0].transcript.trim()
           if (!text) continue
           if (result.isFinal) {
-            lastFinalTextRef.current = (lastFinalTextRef.current + ' ' + text).trim()
+            lastFinalTextRef.current  = (lastFinalTextRef.current + ' ' + text).trim()
+            lastPartialTextRef.current = ''
             setTranscript(lastFinalTextRef.current)
             _advance(text.split(/\s+/).filter(Boolean), true)
           } else {
+            lastPartialTextRef.current = text
+            // Mantém transcript atualizado com final + parcial atual
+            // para que a avaliação final tenha tudo, mesmo sem resultado confirmado
+            const combined = (lastFinalTextRef.current + ' ' + text).trim()
+            setTranscript(combined)
             _advance(text.split(/\s+/).filter(Boolean), false)
           }
         }

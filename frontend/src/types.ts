@@ -38,3 +38,15 @@ export type AppState =
   | 'recording'
   | 'analyzing'
   | 'results'
+
+export interface HistoryEntry {
+  id:             string
+  date:           string
+  categoryId:     string
+  categoryLabel:  string
+  textTitle:      string
+  wpm:            number | null
+  scores:         Record<string, number>
+  duration:       number
+  timerMode:      TimerMode
+}

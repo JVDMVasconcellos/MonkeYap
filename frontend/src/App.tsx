@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { evaluate, fetchCategories, fetchRandomText } from './api'
 import { AudioLevel } from './components/AudioLevel'
+import { PerformanceBar } from './components/PerformanceBar'
 import { CategoryPicker } from './components/CategoryPicker'
 import { Header } from './components/Header'
+import { HistoryPanel } from './components/HistoryPanel'
+import { ScoreInfoModal } from './components/ScoreInfoModal'
 import { ScoreBoard } from './components/ScoreBoard'
 import { TextDisplay } from './components/TextDisplay'
+import { useHistory } from './hooks/useHistory'
 import { useRecorder } from './hooks/useRecorder'
 import { useTheme } from './hooks/useTheme'
 import { useWebSocketSpeech } from './hooks/useWebSocketSpeech'
@@ -22,6 +26,9 @@ export default function App() {
   const [error,      setError]      = useState<string | null>(null)
 
   const { theme, setTheme } = useTheme()
+  const { entries: historyEntries, addEntry, removeEntry, clearHistory } = useHistory()
+  const [showHistory,   setShowHistory]   = useState(false)
+  const [showScoreInfo, setShowScoreInfo] = useState(false)
   const recorder  = useRecorder()
   const speech    = useWebSocketSpeech()
   const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -97,6 +104,16 @@ export default function App() {
       try {
         const res = await evaluate(blob, textItem.text, duration, speech.transcript)
         setResults(res)
+        const cat = categories.find(c => c.id === category)
+        addEntry({
+          categoryId:    category ?? '',
+          categoryLabel: cat?.label ?? category ?? '',
+          textTitle:     textItem.title,
+          wpm:           res.details.wpm ?? null,
+          scores:        res.scores,
+          duration,
+          timerMode,
+        })
       } catch { /* ok */ }
     }
     setAppState('results')
@@ -157,6 +174,17 @@ export default function App() {
     }
   }, [speech.matchedCount, words.length, appState])
 
+  // Auto-stop por silêncio ao final: se o usuário chegou na penúltima palavra
+  // e parou de falar por 1.5s, encerra — cobre o caso da última palavra não reconhecida
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (appState !== 'recording' || words.length === 0) return
+    const nearEnd = speech.matchedCount >= words.length - 1
+    if (!nearEnd || speech.audioLevel >= 0.08) return
+    const t = setTimeout(() => void handleStop(), 1500)
+    return () => clearTimeout(t)
+  }, [speech.audioLevel, speech.matchedCount, appState, words.length])
+
   // ── Derivações ──
   const liveWpm = isRecording && elapsed > 0
     ? Math.round(speech.matchedCount / elapsed * 60)
@@ -189,11 +217,23 @@ export default function App() {
       )}
 
       {/* ── Header Monkeytype-style ── */}
-      <Header theme={theme} setTheme={setTheme} />
+      <Header theme={theme} setTheme={setTheme} onShowHistory={() => setShowHistory(v => !v)} />
 
       {/* ── Main ── */}
       <main className="flex-1 flex flex-col items-center justify-center px-8 py-4">
         <div className="w-full max-w-4xl mx-auto flex flex-col items-center gap-8">
+
+          {/* ── Histórico ── */}
+          {showHistory && (
+            <HistoryPanel
+              entries={historyEntries}
+              onRemove={removeEntry}
+              onClear={clearHistory}
+              onClose={() => setShowHistory(false)}
+            />
+          )}
+
+          {showHistory ? null : (<>
 
           {/* ── Config bar (escondida nos resultados) ── */}
           {appState !== 'results' && (
@@ -274,6 +314,7 @@ export default function App() {
                     </p>
                   )}
                   {isRecording && <AudioLevel level={speech.audioLevel} isActive />}
+                  <PerformanceBar wpm={liveWpm} visible={isRecording && elapsed >= 5 && speech.matchedCount >= 3} />
                   {appState === 'analyzing' && (
                     <p className="font-mono text-sm animate-pulse" style={{ color: 'var(--color-sub)' }}>analisando...</p>
                   )}
@@ -318,6 +359,7 @@ export default function App() {
               </div>
             </div>
           )}
+          </>)}
         </div>
       </main>
 
@@ -344,7 +386,18 @@ export default function App() {
             <span style={{ color: 'var(--color-text)' }}>esc</span>{' '}— parar
           </button>
         )}
+        <button
+          onClick={() => setShowScoreInfo(true)}
+          title="Como a nota é calculada"
+          className="cursor-pointer transition-colors duration-150"
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-text)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
+        >
+          <InfoIcon />
+        </button>
       </footer>
+
+      {showScoreInfo && <ScoreInfoModal onClose={() => setShowScoreInfo(false)} />}
     </div>
   )
 }
@@ -377,6 +430,16 @@ function NextIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="5" y1="12" x2="19" y2="12" />
       <polyline points="12 5 19 12 12 19" />
+    </svg>
+  )
+}
+
+function InfoIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
     </svg>
   )
 }
