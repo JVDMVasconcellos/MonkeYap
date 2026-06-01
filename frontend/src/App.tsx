@@ -102,7 +102,7 @@ export default function App() {
     const blob = await recorder.stopRecording()
     if (blob && textItem) {
       try {
-        const res = await evaluate(blob, textItem.text, duration, speech.transcript)
+        const res = await evaluate(blob, textItem.text, duration, speech.transcriptRef.current)
         setResults(res)
         const cat = categories.find(c => c.id === category)
         addEntry({
@@ -125,6 +125,18 @@ export default function App() {
     speech.reset()
     setAppState('ready')
   }, [speech])
+
+  const handleHome = useCallback(() => {
+    _stopTimer()
+    speech.reset()
+    void recorder.stopRecording()
+    setResults(null)
+    setElapsed(0)
+    setTextItem(null)
+    setCategory(null)
+    setShowHistory(false)
+    setAppState('idle')
+  }, [speech, recorder])
 
   const handleNewText = useCallback(() => {
     if (category) void loadText(category)
@@ -217,7 +229,7 @@ export default function App() {
       )}
 
       {/* ── Header Monkeytype-style ── */}
-      <Header theme={theme} setTheme={setTheme} onShowHistory={() => setShowHistory(v => !v)} />
+      <Header theme={theme} setTheme={setTheme} onShowHistory={() => setShowHistory(v => !v)} onHome={handleHome} />
 
       {/* ── Main ── */}
       <main className="flex-1 flex flex-col items-center justify-center px-8 py-4">

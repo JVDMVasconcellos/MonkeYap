@@ -82,12 +82,13 @@ function alignTranscript(spokenWords: string[], refNormalized: string[], startFr
 interface UseWebSocketSpeechReturn {
   matchedCount: number
   audioLevel:   number
-  modelLoading: boolean
-  modelError:   string | null
-  transcript:   string
-  start:        (refWords: string[]) => Promise<void>
-  stop:         () => void
-  reset:        () => void
+  modelLoading:  boolean
+  modelError:    string | null
+  transcript:    string
+  transcriptRef: React.MutableRefObject<string>
+  start:         (refWords: string[]) => Promise<void>
+  stop:          () => void
+  reset:         () => void
 }
 
 export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
@@ -106,6 +107,7 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   const refNormalizedRef = useRef<string[]>([])
   const lastFinalTextRef   = useRef('')
   const lastPartialTextRef = useRef('')
+  const transcriptRef      = useRef('')   // sempre atual, sem problema de closure
   const rafRef           = useRef(0)
 
   // Audio level refs (used by both engines)
@@ -138,6 +140,11 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
       })
     return () => { canceled = true }
   }, [])
+
+  const _setTranscript = (text: string) => {
+    transcriptRef.current = text
+    setTranscript(text)
+  }
 
   const _setMatched = (next: number) => {
     const clamped = Math.min(Math.max(next, 0), totalRef.current)
@@ -191,7 +198,7 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     lastFinalTextRef.current = ''
     setMatchedCount(0)
     setAudioLevel(0)
-    setTranscript('')
+    _setTranscript('')
 
     if (NativeSRCtor) {
       // ── Web Speech API (Chrome, Edge, Safari, Brave…) ──
@@ -231,14 +238,14 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
           if (result.isFinal) {
             lastFinalTextRef.current  = (lastFinalTextRef.current + ' ' + text).trim()
             lastPartialTextRef.current = ''
-            setTranscript(lastFinalTextRef.current)
+            _setTranscript(lastFinalTextRef.current)
             _advance(text.split(/\s+/).filter(Boolean), true)
           } else {
             lastPartialTextRef.current = text
             // Mantém transcript atualizado com final + parcial atual
             // para que a avaliação final tenha tudo, mesmo sem resultado confirmado
             const combined = (lastFinalTextRef.current + ' ' + text).trim()
-            setTranscript(combined)
+            _setTranscript(combined)
             _advance(text.split(/\s+/).filter(Boolean), false)
           }
         }
@@ -279,7 +286,7 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
         const newText = msg.result.text?.trim()
         if (!newText) return
         lastFinalTextRef.current = (lastFinalTextRef.current + ' ' + newText).trim()
-        setTranscript(lastFinalTextRef.current)
+        _setTranscript(lastFinalTextRef.current)
         _advance(newText.split(/\s+/).filter(Boolean), true)
       })
 
@@ -335,8 +342,8 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     confirmedRef.current = 0
     setMatchedCount(0)
     setAudioLevel(0)
-    setTranscript('')
+    _setTranscript('')
   }, [_teardown])
 
-  return { matchedCount, audioLevel, modelLoading, modelError, transcript, start, stop, reset }
+  return { matchedCount, audioLevel, modelLoading, modelError, transcript, transcriptRef, start, stop, reset }
 }

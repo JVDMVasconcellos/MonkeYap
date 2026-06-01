@@ -3,12 +3,13 @@ import { THEMES } from '../hooks/useTheme'
 import type { ThemeId } from '../hooks/useTheme'
 
 interface Props {
-  theme:        ThemeId
-  setTheme:     (t: ThemeId) => void
+  theme:         ThemeId
+  setTheme:      (t: ThemeId) => void
   onShowHistory: () => void
+  onHome:        () => void
 }
 
-export function Header({ theme, setTheme, onShowHistory }: Props) {
+export function Header({ theme, setTheme, onShowHistory, onHome }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const current = THEMES.find(t => t.id === theme)!
@@ -24,7 +25,10 @@ export function Header({ theme, setTheme, onShowHistory }: Props) {
   return (
     <header className="w-full px-8 py-4 flex items-center justify-between shrink-0 relative">
       {/* ── Logo ── */}
-      <div className="flex items-center gap-4 select-none cursor-default">
+      <button
+        onClick={onHome}
+        className="flex items-center gap-4 select-none cursor-pointer transition-opacity duration-150 hover:opacity-80"
+      >
         <img
           src="/logo.png"
           alt="MonkeYap"
@@ -35,7 +39,7 @@ export function Header({ theme, setTheme, onShowHistory }: Props) {
           <span style={{ color: 'var(--color-main)' }}>monke</span>
           <span style={{ color: 'var(--color-text)' }}>yap</span>
         </span>
-      </div>
+      </button>
 
       {/* ── Nav direita ── */}
       <div ref={ref} className="relative flex items-center gap-1">
