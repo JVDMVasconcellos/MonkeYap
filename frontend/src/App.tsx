@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { evaluate, fetchCategories, fetchRandomText } from './api'
+import { evaluate, fetchCategories, fetchRandomText, LANGUAGES } from './api'
 import { AudioLevel } from './components/AudioLevel'
 import { PerformanceBar } from './components/PerformanceBar'
 import { CategoryPicker } from './components/CategoryPicker'
@@ -13,10 +13,12 @@ import { useRecorder } from './hooks/useRecorder'
 import { useTheme } from './hooks/useTheme'
 import { useWebSocketSpeech } from './hooks/useWebSocketSpeech'
 import type { AppState, Category, EvaluationResult, TextItem, TimerMode } from './types'
+// Language type used via LANGUAGES constant from api
 
 
 export default function App() {
   const [appState,   setAppState]   = useState<AppState>('idle')
+  const [language,   setLanguage]   = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [category,   setCategory]   = useState<string | null>(null)
   const [textItem,   setTextItem]   = useState<TextItem | null>(null)
@@ -34,9 +36,16 @@ export default function App() {
   const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const startRef  = useRef(0)
 
-  useEffect(() => {
-    fetchCategories().then(setCategories).catch(() => setError('Não foi possível conectar ao servidor'))
-  }, [])
+  const handleLanguageSelect = useCallback((id: string) => {
+    if (id === language) return
+    setLanguage(id)
+    setCategory(null)
+    setTextItem(null)
+    setResults(null)
+    setElapsed(0)
+    speech.reset()
+    fetchCategories(id).then(setCategories).catch(() => setError('Erro ao carregar categorias'))
+  }, [language, speech])
 
   // Auto-stop no countdown
   useEffect(() => {
@@ -134,6 +143,8 @@ export default function App() {
     setElapsed(0)
     setTextItem(null)
     setCategory(null)
+    setLanguage(null)
+    setCategories([])
     setShowHistory(false)
     setAppState('idle')
   }, [speech, recorder])
@@ -250,6 +261,9 @@ export default function App() {
           {/* ── Config bar (escondida nos resultados) ── */}
           {appState !== 'results' && (
             <CategoryPicker
+              languages={LANGUAGES}
+              selectedLanguage={language}
+              onSelectLanguage={handleLanguageSelect}
               categories={categories}
               selectedCategory={category}
               onSelectCategory={handleCategorySelect}

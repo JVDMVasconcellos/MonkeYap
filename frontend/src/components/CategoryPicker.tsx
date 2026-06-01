@@ -1,4 +1,4 @@
-import type { Category, TimerMode } from '../types'
+import type { Category, Language, TimerMode } from '../types'
 
 const TIMER_OPTIONS: { label: string; value: TimerMode }[] = [
   { label: '∞',  value: 'unlimited' },
@@ -8,6 +8,9 @@ const TIMER_OPTIONS: { label: string; value: TimerMode }[] = [
 ]
 
 interface Props {
+  languages:        Language[]
+  selectedLanguage: string | null
+  onSelectLanguage: (id: string) => void
   categories:       Category[]
   selectedCategory: string | null
   onSelectCategory: (id: string) => void
@@ -17,6 +20,9 @@ interface Props {
 }
 
 export function CategoryPicker({
+  languages,
+  selectedLanguage,
+  onSelectLanguage,
   categories,
   selectedCategory,
   onSelectCategory,
@@ -32,35 +38,51 @@ export function CategoryPicker({
     ].join(' ')
 
   return (
-    <div className="flex items-center gap-0.5 pill-bar rounded-xl px-1.5 py-1 select-none">
-      {/* Categories */}
-      {categories.map(cat => (
-        <button
-          key={cat.id}
-          onClick={() => !disabled && onSelectCategory(cat.id)}
-          disabled={disabled}
-          className={pill(selectedCategory === cat.id, disabled)}
-        >
-          {cat.label}
-        </button>
-      ))}
+    <div className="flex flex-col items-center gap-2">
 
-      {/* Separator */}
-      {categories.length > 0 && (
-        <span className="w-px h-4 bg-sub/20 mx-1.5 shrink-0" />
+      {/* Linha 1: idiomas */}
+      <div className="flex items-center gap-0.5 pill-bar rounded-xl px-1.5 py-1 select-none">
+        {languages.map(lang => (
+          <button
+            key={lang.id}
+            onClick={() => !disabled && onSelectLanguage(lang.id)}
+            disabled={disabled}
+            className={pill(selectedLanguage === lang.id, disabled)}
+          >
+            {lang.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Linha 2: categorias (só aparece quando idioma selecionado) */}
+      {selectedLanguage && (
+        <div className="flex items-center gap-0.5 pill-bar rounded-xl px-1.5 py-1 select-none">
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => !disabled && onSelectCategory(cat.id)}
+              disabled={disabled}
+              className={pill(selectedCategory === cat.id, disabled)}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
       )}
 
-      {/* Timer options */}
-      {TIMER_OPTIONS.map(opt => (
-        <button
-          key={String(opt.value)}
-          onClick={() => !disabled && onSelectTimer(opt.value)}
-          disabled={disabled}
-          className={pill(timerMode === opt.value, disabled)}
-        >
-          {opt.label}
-        </button>
-      ))}
+      {/* Linha 3: timer (sempre visível) */}
+      <div className="flex items-center gap-0.5 pill-bar rounded-xl px-1.5 py-1 select-none">
+        {TIMER_OPTIONS.map(opt => (
+          <button
+            key={String(opt.value)}
+            onClick={() => !disabled && onSelectTimer(opt.value)}
+            disabled={disabled}
+            className={pill(timerMode === opt.value, disabled)}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

@@ -1,8 +1,14 @@
+export interface Language {
+  id:    string
+  label: string
+}
+
 export interface Category {
   id:          string
   label:       string
   description: string
   color:       string
+  language:    string
 }
 
 export interface TextItem {
