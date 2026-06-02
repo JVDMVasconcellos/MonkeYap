@@ -1,0 +1,50 @@
+[
+  {
+    "id": "three-little-pigs",
+    "title": "The Three Little Pigs",
+    "text": "Once upon a time, three little pigs left home to build their own houses. The first pig built a house of straw very quickly and went out to play. The second pig built a house of sticks and also went to have fun. The third pig worked hard and built a house of bricks. A big bad wolf came and said he would huff and puff and blow their houses down. He blew the straw house down. He blew the stick house down. The two little pigs ran to their brother's brick house. The wolf huffed and puffed, but the brick house stood firm. The wolf gave up and ran away. The three pigs lived happily ever after.",
+    "author": "European folklore"
+  },
+  {
+    "id": "tortoise-hare",
+    "title": "The Tortoise and the Hare",
+    "text": "Once there was a hare who was always bragging about how fast he could run. One day, a tortoise challenged him to a race. All the animals came to watch. The hare ran so fast that he quickly left the tortoise far behind. Thinking he had plenty of time, the hare decided to take a nap under a shady tree. Meanwhile, the tortoise kept walking slowly and steadily, never stopping to rest. When the hare woke up, he saw the tortoise almost at the finish line. He ran as fast as he could, but it was too late. The tortoise had won. Slow and steady wins the race.",
+    "author": "Aesop"
+  },
+  {
+    "id": "goldilocks",
+    "title": "Goldilocks and the Three Bears",
+    "text": "A little girl named Goldilocks walked through the forest and found a house. Inside, she found three bowls of porridge on the table. She tasted the first bowl, but it was too hot. She tasted the second bowl, but it was too cold. She tasted the third bowl, and it was just right, so she ate it all up. Then she tried the three chairs. The third chair was just right, but it broke. Feeling tired, she went upstairs and tried the three beds. The third bed was just right, so she fell asleep. When the three bears came home and found her, Goldilocks woke up and ran out of the house as fast as she could.",
+    "author": "English folklore"
+  },
+  {
+    "id": "red-riding-hood",
+    "title": "Little Red Riding Hood",
+    "text": "Once upon a time, a little girl called Little Red Riding Hood set off through the forest to visit her sick grandmother. On the way, she met a wolf who asked where she was going. She told him everything. The wolf ran ahead and arrived at grandmother's house first. He disguised himself as the grandmother and got into bed. When Little Red Riding Hood arrived, she noticed something was wrong. Grandmother's eyes were very big. Her ears were very large. And her teeth were enormous. It was the wolf! She screamed, and a woodcutter nearby heard her cries and came to rescue her. After that, Little Red Riding Hood never talked to strangers again.",
+    "author": "Charles Perrault"
+  },
+  {
+    "id": "ugly-duckling",
+    "title": "The Ugly Duckling",
+    "text": "A mother duck hatched her eggs by the pond. All the ducklings were yellow and fluffy, except one. He was larger, grey, and awkward. All the other animals made fun of him and called him the ugly duckling. The little duck felt very sad and ran away from home. He spent a cold and lonely winter by himself. When spring came, he looked into the still water and saw a beautiful white swan looking back at him. He had grown into a magnificent swan. A flock of swans welcomed him warmly. He realized that sometimes what seems like a weakness can become your greatest strength.",
+    "author": "Hans Christian Andersen"
+  },
+  {
+    "id": "cinderella",
+    "title": "Cinderella",
+    "text": "Cinderella lived with her stepmother and two stepsisters who treated her very badly. They made her do all the housework while they did nothing. One day, the king announced a grand ball at the palace. Everyone was invited. Cinderella's stepsisters went to the ball, but she had to stay home. Her fairy godmother appeared and transformed her rags into a beautiful gown. She gave her glass slippers and a pumpkin carriage. But she warned Cinderella to return home before midnight. At the ball, the prince fell in love with her. At midnight, she ran away and lost one of her glass slippers. The prince searched the whole kingdom and found her. They got married and lived happily ever after.",
+    "author": "Charles Perrault"
+  },
+  {
+    "id": "ant-grasshopper",
+    "title": "The Ant and the Grasshopper",
+    "text": "During the warm summer months, a grasshopper spent his days singing and playing while the ant worked hard, collecting food and storing it for winter. The grasshopper laughed at the ant and said she was wasting the beautiful summer days working instead of having fun. The ant kept working without listening. When winter arrived, the grasshopper had nothing to eat and was very cold and hungry. He went to the ant and asked for food. The ant asked what the grasshopper had done all summer. He replied that he had been singing. The ant said that those who sing in summer must go hungry in winter. The ant shared a little food and taught the grasshopper a valuable lesson about responsibility.",
+    "author": "Aesop"
+  },
+  {
+    "id": "snow-white",
+    "title": "Snow White",
+    "text": "Once there was a princess named Snow White whose stepmother was a jealous queen. Every day the queen asked her magic mirror who was the fairest in the land. The mirror always answered Snow White. Furious, the queen ordered a huntsman to take Snow White into the forest and kill her. The huntsman could not do it and let her go. Snow White found a small cottage in the woods where seven dwarfs lived. She stayed with them and cooked and cleaned. But the queen found out and disguised herself as an old woman. She gave Snow White a poisoned apple. Snow White fell into a deep sleep. A prince came, broke the spell with a kiss, and they lived happily ever after.",
+    "author": "Brothers Grimm"
+  }
+]

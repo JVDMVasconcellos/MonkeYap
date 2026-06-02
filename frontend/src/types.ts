@@ -48,6 +48,7 @@ export type AppState =
 export interface HistoryEntry {
   id:             string
   date:           string
+  language:       string
   categoryId:     string
   categoryLabel:  string
   textTitle:      string

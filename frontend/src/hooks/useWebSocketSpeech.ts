@@ -5,6 +5,8 @@ const SAMPLE_RATE      = 16000
 const BUFFER_SIZE      = 256
 const SKIP_WINDOW      = 8
 const CONFIRMED_SKIP   = 3
+const SKIP_WINDOW_EN    = 12
+const CONFIRMED_SKIP_EN = 6
 
 const MODEL_URL = '/models/vosk-pt.tar.gz'
 
@@ -86,7 +88,7 @@ interface UseWebSocketSpeechReturn {
   modelError:    string | null
   transcript:    string
   transcriptRef: React.MutableRefObject<string>
-  start:         (refWords: string[]) => Promise<void>
+  start:         (refWords: string[], lang?: string) => Promise<void>
   stop:          () => void
   reset:         () => void
 }
@@ -123,6 +125,10 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const nativeSRRef = useRef<any>(null)
 
+  // Language-aware skip windows
+  const skipWindowRef   = useRef(SKIP_WINDOW)
+  const confirmedSkipRef = useRef(CONFIRMED_SKIP)
+
   // Only preload Vosk when Web Speech API is unavailable (Firefox)
   useEffect(() => {
     if (NativeSRCtor !== null) return
@@ -157,7 +163,7 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   const _advance = (words: string[], confirmed: boolean) => {
     if (!activeRef.current) return
     const expanded  = words.flatMap(w => expandSymbols(w).split(/\s+/).filter(Boolean))
-    const skipWin   = confirmed ? CONFIRMED_SKIP : SKIP_WINDOW
+    const skipWin   = confirmed ? confirmedSkipRef.current : skipWindowRef.current
     const newCursor = alignTranscript(expanded, refNormalizedRef.current, confirmedRef.current, skipWin)
     if (newCursor > matchedRef.current) _setMatched(newCursor)
     if (confirmed && newCursor > confirmedRef.current) confirmedRef.current = newCursor
@@ -188,7 +194,7 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     lastPartialTextRef.current = ''
   }, [])
 
-  const start = useCallback(async (refWords: string[]) => {
+  const start = useCallback(async (refWords: string[], lang = 'pt-BR') => {
     const expandedRef        = refWords.flatMap(w => expandSymbols(w).split(/\s+/).filter(Boolean))
     totalRef.current         = expandedRef.length
     matchedRef.current       = 0
@@ -199,6 +205,11 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     setMatchedCount(0)
     setAudioLevel(0)
     _setTranscript('')
+
+    // Larger skip windows for English — archaic/literary words often mis-recognized
+    const isEn = lang.startsWith('en')
+    skipWindowRef.current    = isEn ? SKIP_WINDOW_EN    : SKIP_WINDOW
+    confirmedSkipRef.current = isEn ? CONFIRMED_SKIP_EN : CONFIRMED_SKIP
 
     if (NativeSRCtor) {
       // ── Web Speech API (Chrome, Edge, Safari, Brave…) ──
@@ -227,7 +238,7 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
       const sr          = new NativeSRCtor()
       sr.continuous     = true
       sr.interimResults = true
-      sr.lang           = 'pt-BR'
+      sr.lang           = lang
       nativeSRRef.current = sr
 
       sr.onresult = (event: any) => {
@@ -242,8 +253,6 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
             _advance(text.split(/\s+/).filter(Boolean), true)
           } else {
             lastPartialTextRef.current = text
-            // Mantém transcript atualizado com final + parcial atual
-            // para que a avaliação final tenha tudo, mesmo sem resultado confirmado
             const combined = (lastFinalTextRef.current + ' ' + text).trim()
             _setTranscript(combined)
             _advance(text.split(/\s+/).filter(Boolean), false)

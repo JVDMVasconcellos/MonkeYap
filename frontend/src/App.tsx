@@ -93,7 +93,8 @@ export default function App() {
     setElapsed(0)
     speech.reset()
     try {
-      await speech.start(textItem.text.split(/\s+/))
+      const srLang = language === 'en' ? 'en-US' : 'pt-BR'
+      await speech.start(textItem.text.split(/\s+/), srLang)
       await recorder.startListening()
       _startTimer()
       setAppState('recording')
@@ -115,6 +116,7 @@ export default function App() {
         setResults(res)
         const cat = categories.find(c => c.id === category)
         addEntry({
+          language:      language ?? 'pt',
           categoryId:    category ?? '',
           categoryLabel: cat?.label ?? category ?? '',
           textTitle:     textItem.title,

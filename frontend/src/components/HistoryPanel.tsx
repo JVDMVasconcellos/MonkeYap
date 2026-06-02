@@ -168,6 +168,11 @@ function EntryRow({ entry, onRemove }: { entry: HistoryEntry; onRemove: (id: str
           {dateStr} {timeStr}
         </span>
 
+        {/* Language flag */}
+        <span className="shrink-0 text-base" title={entry.language === 'en' ? 'English' : 'Português'}>
+          {entry.language === 'en' ? '🇺🇸' : '🇧🇷'}
+        </span>
+
         {/* Category */}
         <span className="shrink-0 w-20" style={{ color: 'var(--color-sub)' }}>
           {entry.categoryLabel}
