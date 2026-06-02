@@ -1,10 +1,17 @@
 import type { EvaluationResult, WordDiff } from './types'
 
-const FILLER_WORDS = new Set([
+const FILLER_WORDS_PT = new Set([
   'uh', 'uhm', 'hm', 'hmm', 'ah', 'ahm', 'ne', 'tipo', 'assim',
   'entao', 'sabe', 'cara', 'enfim', 'bom', 'olha', 'veja',
   'certo', 'ok', 'ta', 'eh', 'bem', 'ai', 'dai',
   'num', 'pra', 'pro', 'ahn',
+])
+
+const FILLER_WORDS_EN = new Set([
+  'uh', 'um', 'uhm', 'hmm', 'hm', 'ah', 'er',
+  'like', 'literally', 'basically', 'actually', 'honestly',
+  'right', 'okay', 'ok', 'so', 'well', 'anyway',
+  'you know', 'i mean', 'sort of', 'kind of',
 ])
 
 const WPM_MIN = 120
@@ -99,11 +106,11 @@ function buildWordDiff(refText: string, refNorm: string[], spokenNorm: string[])
   return rawWords.slice(0, refNorm.length).map((word, i) => ({ word, status: status[i] }))
 }
 
-function computeDiff(refText: string, refNorm: string[], spokenNorm: string[]) {
+function computeDiff(refText: string, refNorm: string[], spokenNorm: string[], fillers: Set<string>) {
   const wordDiff = buildWordDiff(refText, refNorm, spokenNorm)
   const missing = refNorm.filter((_, i) => wordDiff[i]?.status === 'missing')
   const added = spokenNorm.filter(w =>
-    !FILLER_WORDS.has(w) && !refNorm.some(r => wordMatch(r, w))
+    !fillers.has(w) && !refNorm.some(r => wordMatch(r, w))
   )
   return { wordDiff, missing, added }
 }
@@ -162,11 +169,13 @@ export async function evaluate(
   refText: string,
   duration: number,
   audioBlob?: Blob,
+  language = 'pt',
 ): Promise<EvaluationResult> {
   const spoken = splitWords(transcript)
   const scores: Record<string, number> = {}
   const errors: string[] = []
   const details: EvaluationResult['details'] = {}
+  const FILLER_WORDS = language === 'en' ? FILLER_WORDS_EN : FILLER_WORDS_PT
 
   // 1. Ritmo
   if (duration > 1 && spoken.length > 0) {
@@ -220,7 +229,7 @@ export async function evaluate(
     if (ref.length > 0 && spoken.length > 0) {
       scores['Precisão'] = Math.round(jaroWinkler(ref.join(' '), spoken.join(' ')) * 100) / 10
 
-      const { wordDiff, missing, added } = computeDiff(refText, ref, spoken)
+      const { wordDiff, missing, added } = computeDiff(refText, ref, spoken, FILLER_WORDS)
 
       if (missing.length > 0) {
         const sample = missing.slice(0, 8).map(w => `"${w}"`).join(', ')

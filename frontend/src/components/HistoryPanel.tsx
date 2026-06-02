@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { HistoryEntry } from '../types'
+import { ShareModal } from './ShareCard'
+import type { ShareData } from './ShareCard'
 
 interface Props {
   entries:      HistoryEntry[]
@@ -135,7 +137,8 @@ function Stat({ label, value, highlight = false }: { label: string; value: strin
 const DETAIL_METRICS = ['Precisão', 'Fluência', 'Completude', 'Ritmo', 'Entonação']
 
 function EntryRow({ entry, onRemove }: { entry: HistoryEntry; onRemove: (id: string) => void }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded,  setExpanded]  = useState(false)
+  const [shareData, setShareData] = useState<ShareData | null>(null)
   const date    = new Date(entry.date)
   const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
   const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -196,6 +199,29 @@ function EntryRow({ entry, onRemove }: { entry: HistoryEntry; onRemove: (id: str
           <div className="text-xs" style={{ color: 'var(--color-sub)' }}>nota</div>
         </div>
 
+        {/* Share */}
+        <button
+          onClick={e => {
+            e.stopPropagation()
+            setShareData({
+              scores:        entry.scores,
+              wpm:           entry.wpm,
+              elapsed:       entry.duration,
+              textTitle:     entry.textTitle,
+              categoryLabel: entry.categoryLabel,
+              language:      entry.language ?? 'pt',
+              date:          entry.date,
+            })
+          }}
+          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer"
+          style={{ color: 'var(--color-sub)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-main)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
+          title="Compartilhar"
+        >
+          <ShareIconSmall />
+        </button>
+
         {/* Delete */}
         <button
           onClick={e => { e.stopPropagation(); onRemove(entry.id) }}
@@ -208,6 +234,8 @@ function EntryRow({ entry, onRemove }: { entry: HistoryEntry; onRemove: (id: str
           <TrashIcon />
         </button>
       </div>
+
+      {shareData && <ShareModal data={shareData} onClose={() => setShareData(null)} />}
 
       {/* ── Detalhes expansíveis ── */}
       {expanded && (
@@ -245,6 +273,15 @@ function EntryRow({ entry, onRemove }: { entry: HistoryEntry; onRemove: (id: str
         </div>
       )}
     </div>
+  )
+}
+
+function ShareIconSmall() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
   )
 }
 

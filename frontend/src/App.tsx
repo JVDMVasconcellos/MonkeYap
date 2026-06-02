@@ -7,6 +7,8 @@ import { Header } from './components/Header'
 import { HistoryPanel } from './components/HistoryPanel'
 import { ScoreInfoModal } from './components/ScoreInfoModal'
 import { ScoreBoard } from './components/ScoreBoard'
+import { ShareCard } from './components/ShareCard'
+import type { ShareData } from './components/ShareCard'
 import { TextDisplay } from './components/TextDisplay'
 import { useHistory } from './hooks/useHistory'
 import { useRecorder } from './hooks/useRecorder'
@@ -112,7 +114,7 @@ export default function App() {
     const blob = await recorder.stopRecording()
     if (blob && textItem) {
       try {
-        const res = await evaluate(blob, textItem.text, duration, speech.transcriptRef.current)
+        const res = await evaluate(blob, textItem.text, duration, speech.transcriptRef.current, language ?? 'pt')
         setResults(res)
         const cat = categories.find(c => c.id === category)
         addEntry({
@@ -385,6 +387,18 @@ export default function App() {
                   <NextIcon />
                 </ActionButton>
               </div>
+
+              {results && textItem && (() => {
+                const shareData: ShareData = {
+                  scores:        results.scores,
+                  wpm:           results.details.wpm ?? null,
+                  elapsed,
+                  textTitle:     textItem.title,
+                  categoryLabel: categories.find(c => c.id === category)?.label ?? category ?? '',
+                  language:      language ?? 'pt',
+                }
+                return <ShareCard data={shareData} />
+              })()}
             </div>
           )}
           </>)}

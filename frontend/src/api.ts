@@ -34,6 +34,7 @@ export async function evaluate(
   refText: string,
   duration: number,
   transcript = '',
+  language = 'pt',
 ): Promise<EvaluationResult> {
-  return localEvaluate(transcript, refText, duration, audioBlob)
+  return localEvaluate(transcript, refText, duration, audioBlob, language)
 }
