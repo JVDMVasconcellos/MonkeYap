@@ -1,35 +1,13 @@
+import { t, SCORE_INFO, type Lang } from '../i18n'
+
 interface Props {
-  onClose: () => void
+  onClose:  () => void
+  language: Lang
 }
 
-const METRICS = [
-  {
-    name: 'Precisão',
-    desc: 'Quão parecido o que você falou foi com o texto original, palavra por palavra.',
-  },
-  {
-    name: 'Fluência',
-    desc: 'Penaliza vícios de linguagem (uh, tipo, né, assim, sabe…). Quanto menos, melhor.',
-  },
-  {
-    name: 'Completude',
-    desc: 'Porcentagem do texto que você cobriu. Pular muitas palavras reduz essa nota.',
-  },
-  {
-    name: 'Ritmo',
-    desc: 'Baseado no seu WPM (palavras por minuto). A faixa ideal para oratória é 120–160 wpm.',
-  },
-  {
-    name: 'Entonação',
-    desc: 'Analisa a variação de volume no áudio. Voz monótona ou muito baixa reduz a nota.',
-  },
-  {
-    name: 'Nota geral',
-    desc: 'Média simples de todas as métricas acima, de 0 a 10.',
-  },
-]
+export function ScoreInfoModal({ onClose, language }: Props) {
+  const metrics = language === 'en' ? SCORE_INFO.en : SCORE_INFO.pt
 
-export function ScoreInfoModal({ onClose }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -43,7 +21,7 @@ export function ScoreInfoModal({ onClose }: Props) {
       >
         <div className="flex items-center justify-between">
           <span className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--color-sub)' }}>
-            como a nota é calculada
+            {t(language, 'score_info_title')}
           </span>
           <button
             onClick={onClose}
@@ -57,7 +35,7 @@ export function ScoreInfoModal({ onClose }: Props) {
         </div>
 
         <div className="flex flex-col gap-3">
-          {METRICS.map(m => (
+          {metrics.map(m => (
             <div key={m.name} className="flex flex-col gap-0.5">
               <span className="font-mono text-sm font-bold" style={{ color: 'var(--color-text)' }}>
                 {m.name}

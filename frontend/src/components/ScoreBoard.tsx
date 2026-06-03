@@ -1,15 +1,17 @@
 import type { EvaluationResult } from '../types'
 import type { TimerMode } from '../types'
+import { t, metricLabel, type Lang } from '../i18n'
 
 interface Props {
   result:    EvaluationResult
   timerMode: TimerMode
   elapsed:   number
+  language:  Lang
 }
 
 const SECONDARY = ['Fluência', 'Completude', 'Ritmo', 'Entonação']
 
-export function ScoreBoard({ result, timerMode, elapsed }: Props) {
+export function ScoreBoard({ result, timerMode, elapsed, language }: Props) {
   const wpm       = result.details.wpm
   const precisao  = result.scores['Precisão']
   const timeLabel = typeof timerMode === 'number' ? `${timerMode}s` : `${elapsed}s`
@@ -31,7 +33,7 @@ export function ScoreBoard({ result, timerMode, elapsed }: Props) {
         )}
         {precisao != null && (
           <StatGroup
-            label="precisão"
+            label={metricLabel(language, 'Precisão')}
             value={`${precisao.toFixed(1)}`}
             hero
           />
@@ -43,12 +45,12 @@ export function ScoreBoard({ result, timerMode, elapsed }: Props) {
         {SECONDARY.filter(k => k in result.scores).map(k => (
           <StatGroup
             key={k}
-            label={k.toLowerCase()}
+            label={metricLabel(language, k)}
             value={result.scores[k].toFixed(1)}
           />
         ))}
 
-        <StatGroup label="tempo" value={timeLabel} />
+        <StatGroup label={t(language, 'label_time')} value={timeLabel} />
 
         {chars != null && (
           <StatGroup label="chars" value={String(chars)} />
@@ -74,7 +76,7 @@ export function ScoreBoard({ result, timerMode, elapsed }: Props) {
             className="font-mono text-xs uppercase tracking-widest mb-2"
             style={{ color: 'var(--color-sub)' }}
           >
-            reconhecido
+            {t(language, 'label_recognized')}
           </p>
           <p
             className="font-mono text-sm leading-relaxed"

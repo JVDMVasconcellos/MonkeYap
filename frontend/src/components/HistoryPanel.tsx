@@ -2,22 +2,24 @@ import { useState } from 'react'
 import type { HistoryEntry } from '../types'
 import { ShareModal } from './ShareCard'
 import type { ShareData } from './ShareCard'
+import { t, metricLabel, type Lang } from '../i18n'
 
 interface Props {
   entries:      HistoryEntry[]
   onRemove:     (id: string) => void
   onClear:      () => void
   onClose:      () => void
+  language:     Lang
 }
 
-export function HistoryPanel({ entries, onRemove, onClear, onClose }: Props) {
+export function HistoryPanel({ entries, onRemove, onClear, onClose, language }: Props) {
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 animate-slide-up">
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--color-sub)' }}>
-          histórico
+          {t(language, 'history_title')}
         </span>
         <div className="flex items-center gap-4">
           {entries.length > 0 && (
@@ -28,7 +30,7 @@ export function HistoryPanel({ entries, onRemove, onClear, onClose }: Props) {
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-error)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
             >
-              limpar
+              {t(language, 'clear')}
             </button>
           )}
           <button
@@ -38,24 +40,24 @@ export function HistoryPanel({ entries, onRemove, onClear, onClose }: Props) {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-text)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
           >
-            ✕ fechar
+            {t(language, 'close')}
           </button>
         </div>
       </div>
 
       {entries.length === 0 ? (
         <p className="font-mono text-sm py-16 text-center" style={{ color: 'var(--color-sub)' }}>
-          nenhuma sessão registrada ainda
+          {t(language, 'no_sessions')}
         </p>
       ) : (
         <>
           {/* Summary row */}
-          <SummaryBar entries={entries} />
+          <SummaryBar entries={entries} language={language} />
 
           {/* List */}
           <div className="flex flex-col gap-2">
             {entries.map(e => (
-              <EntryRow key={e.id} entry={e} onRemove={onRemove} />
+              <EntryRow key={e.id} entry={e} onRemove={onRemove} language={language} />
             ))}
           </div>
         </>
@@ -64,7 +66,7 @@ export function HistoryPanel({ entries, onRemove, onClear, onClose }: Props) {
   )
 }
 
-function SummaryBar({ entries }: { entries: HistoryEntry[] }) {
+function SummaryBar({ entries, language }: { entries: HistoryEntry[]; language: Lang }) {
   const withWpm   = entries.filter(e => e.wpm != null)
   const avgWpm    = withWpm.length
     ? Math.round(withWpm.reduce((s, e) => s + e.wpm!, 0) / withWpm.length)
@@ -87,10 +89,10 @@ function SummaryBar({ entries }: { entries: HistoryEntry[] }) {
 
       {/* Linha 1: stats gerais */}
       <div className="flex flex-wrap items-end gap-8">
-        <Stat label="sessões"   value={String(entries.length)} />
-        {avgWpm   != null && <Stat label="wpm médio"   value={String(avgWpm)} />}
-        {best     != null && <Stat label="melhor wpm"  value={String(best)} highlight />}
-        {avgGeral != null && <Stat label="nota média"  value={avgGeral} highlight />}
+        <Stat label={t(language, 'sessions')}  value={String(entries.length)} />
+        {avgWpm   != null && <Stat label={t(language, 'avg_wpm')}   value={String(avgWpm)} />}
+        {best     != null && <Stat label={t(language, 'best_wpm')}  value={String(best)} highlight />}
+        {avgGeral != null && <Stat label={t(language, 'avg_score')} value={avgGeral} highlight />}
       </div>
 
       {/* Linha 2: média por métrica */}
@@ -109,7 +111,7 @@ function SummaryBar({ entries }: { entries: HistoryEntry[] }) {
                   {avg}
                 </div>
                 <div className="font-mono text-xs mt-1" style={{ color: 'var(--color-sub)' }}>
-                  {k.toLowerCase()}
+                  {metricLabel(language, k)}
                 </div>
               </div>
             </div>
@@ -136,7 +138,7 @@ function Stat({ label, value, highlight = false }: { label: string; value: strin
 
 const DETAIL_METRICS = ['Precisão', 'Fluência', 'Completude', 'Ritmo', 'Entonação']
 
-function EntryRow({ entry, onRemove }: { entry: HistoryEntry; onRemove: (id: string) => void }) {
+function EntryRow({ entry, onRemove, language }: { entry: HistoryEntry; onRemove: (id: string) => void; language: Lang }) {
   const [expanded,  setExpanded]  = useState(false)
   const [shareData, setShareData] = useState<ShareData | null>(null)
   const date    = new Date(entry.date)
@@ -252,7 +254,7 @@ function EntryRow({ entry, onRemove }: { entry: HistoryEntry; onRemove: (id: str
                 {entry.scores[k].toFixed(1)}
               </div>
               <div className="text-xs mt-0.5" style={{ color: 'var(--color-sub)' }}>
-                {k.toLowerCase()}
+                {metricLabel(language, k)}
               </div>
             </div>
           ))}
@@ -268,7 +270,7 @@ function EntryRow({ entry, onRemove }: { entry: HistoryEntry; onRemove: (id: str
             <div className="tabular-nums font-bold" style={{ fontSize: '1.5rem', color: 'var(--color-text)' }}>
               {entry.duration}s
             </div>
-            <div className="text-xs mt-0.5" style={{ color: 'var(--color-sub)' }}>duração</div>
+            <div className="text-xs mt-0.5" style={{ color: 'var(--color-sub)' }}>{t(language, 'duration')}</div>
           </div>
         </div>
       )}

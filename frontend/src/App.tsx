@@ -15,7 +15,7 @@ import { useRecorder } from './hooks/useRecorder'
 import { useTheme } from './hooks/useTheme'
 import { useWebSocketSpeech } from './hooks/useWebSocketSpeech'
 import type { AppState, Category, EvaluationResult, TextItem, TimerMode } from './types'
-// Language type used via LANGUAGES constant from api
+import { t } from './i18n'
 
 
 export default function App() {
@@ -46,7 +46,7 @@ export default function App() {
     setResults(null)
     setElapsed(0)
     speech.reset()
-    fetchCategories(id).then(setCategories).catch(() => setError('Erro ao carregar categorias'))
+    fetchCategories(id).then(setCategories).catch(() => setError(t(id, 'error_load_categories')))
   }, [language, speech])
 
   // Auto-stop no countdown
@@ -79,7 +79,7 @@ export default function App() {
       setTextItem(item)
       setAppState('ready')
     } catch {
-      setError('Falha ao carregar texto')
+      setError(t(language, 'error_load_text'))
     }
   }, [speech])
 
@@ -101,7 +101,7 @@ export default function App() {
       _startTimer()
       setAppState('recording')
     } catch {
-      setError('Não foi possível acessar o microfone')
+      setError(t(language, 'error_mic'))
       speech.reset()
     }
   }, [textItem, speech, recorder])
@@ -257,6 +257,7 @@ export default function App() {
               onRemove={removeEntry}
               onClear={clearHistory}
               onClose={() => setShowHistory(false)}
+              language={language}
             />
           )}
 
@@ -302,7 +303,7 @@ export default function App() {
                         /{words.length}
                       </span>
                     </div>
-                    <div className="font-mono text-xs mt-0.5" style={{ color: 'var(--color-sub)' }}>palavras</div>
+                    <div className="font-mono text-xs mt-0.5" style={{ color: 'var(--color-sub)' }}>{t(language, 'words')}</div>
                   </div>
                 </div>
               )}
@@ -322,7 +323,7 @@ export default function App() {
               {/* Placeholder sem texto */}
               {!textItem && (
                 <p className="font-mono text-base py-16" style={{ color: 'var(--color-sub)' }}>
-                  selecione uma categoria para começar
+                  {t(language, 'select_category')}
                 </p>
               )}
 
@@ -340,20 +341,20 @@ export default function App() {
                   {/* Status / hint */}
                   {appState === 'ready' && (
                     <p className="font-mono text-sm px-4 py-1.5 rounded-full" style={{ background: 'rgb(var(--color-panel-rgb)/0.6)', color: 'var(--color-sub)' }}>
-                      {speech.modelLoading ? '⏳ carregando modelo...' : 'fale para começar'}
+                      {speech.modelLoading ? t(language, 'loading_model') : t(language, 'speak_to_start')}
                     </p>
                   )}
                   {isRecording && <AudioLevel level={speech.audioLevel} isActive />}
                   <PerformanceBar wpm={liveWpm} visible={isRecording && elapsed >= 5 && speech.matchedCount >= 3} />
                   {appState === 'analyzing' && (
-                    <p className="font-mono text-sm animate-pulse" style={{ color: 'var(--color-sub)' }}>analisando...</p>
+                    <p className="font-mono text-sm animate-pulse" style={{ color: 'var(--color-sub)' }}>{t(language, 'analyzing')}</p>
                   )}
 
                   {/* Restart icon — estilo Monkeytype */}
                   {appState === 'ready' && (
                     <button
                       onClick={handleNewText}
-                      title="Novo texto (tab)"
+                      title={t(language, 'new_text_tooltip')}
                       className="mt-1 cursor-pointer transition-colors duration-150"
                       style={{ color: 'var(--color-sub)' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-main)' }}
@@ -370,7 +371,7 @@ export default function App() {
           {/* ── Resultados ── */}
           {appState === 'results' && (
             <div className="w-full animate-slide-up flex flex-col gap-10">
-              {results && <ScoreBoard result={results} timerMode={timerMode} elapsed={elapsed} />}
+              {results && <ScoreBoard result={results} timerMode={timerMode} elapsed={elapsed} language={language} />}
 
               <TextDisplay
                 item={textItem}
@@ -380,10 +381,10 @@ export default function App() {
               />
 
               <div className="flex items-center gap-3">
-                <ActionButton onClick={handleReset} title="tentar novamente">
+                <ActionButton onClick={handleReset} title={t(language, 'try_again')}>
                   <RestartIcon />
                 </ActionButton>
-                <ActionButton onClick={handleNewText} title="próximo texto">
+                <ActionButton onClick={handleNewText} title={t(language, 'next_text')}>
                   <NextIcon />
                 </ActionButton>
               </div>
@@ -415,7 +416,7 @@ export default function App() {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-text)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
           >
-            <span style={{ color: 'var(--color-text)' }}>tab</span>{' '}— novo texto
+            <span style={{ color: 'var(--color-text)' }}>tab</span>{' '}— {t(language, 'new_text_hint')}
           </button>
         )}
         {isRecording && (
@@ -425,7 +426,7 @@ export default function App() {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-text)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
           >
-            <span style={{ color: 'var(--color-text)' }}>esc</span>{' '}— parar
+            <span style={{ color: 'var(--color-text)' }}>esc</span>{' '}— {t(language, 'stop_hint')}
           </button>
         )}
         <button
@@ -439,7 +440,7 @@ export default function App() {
         </button>
       </footer>
 
-      {showScoreInfo && <ScoreInfoModal onClose={() => setShowScoreInfo(false)} />}
+      {showScoreInfo && <ScoreInfoModal onClose={() => setShowScoreInfo(false)} language={language} />}
     </div>
   )
 }

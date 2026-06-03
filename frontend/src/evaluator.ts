@@ -117,7 +117,8 @@ function computeDiff(refText: string, refNorm: string[], spokenNorm: string[], f
 
 // ── Intonation via Web Audio API ─────────────────────────────────────────────
 
-async function analyzeIntonation(blob: Blob) {
+async function analyzeIntonation(blob: Blob, language = 'pt') {
+  const isEn = language === 'en'
   try {
     const ab = await blob.arrayBuffer()
     const decodeCtx = new AudioContext()
@@ -146,15 +147,21 @@ async function analyzeIntonation(blob: Blob) {
     let score: number
     if (meanRms < 0.005) {
       score = 3.0
-      errors.push('Volume muito baixo — fale mais alto ou aproxime o microfone')
+      errors.push(isEn
+        ? 'Volume too low — speak louder or move closer to the mic'
+        : 'Volume muito baixo — fale mais alto ou aproxime o microfone')
     } else if (cv < 0.15) {
       score = 6.5
-      errors.push('Voz monótona — varie a entonação para engajar o ouvinte')
+      errors.push(isEn
+        ? 'Monotone voice — vary your intonation to engage listeners'
+        : 'Voz monótona — varie a entonação para engajar o ouvinte')
     } else {
       score = Math.min(10.0, 6.5 + cv * 8)
     }
     if (silenceRatio > 0.40) {
-      errors.push(`Muitas pausas longas (${Math.round(silenceRatio * 100)}% do tempo em silêncio)`)
+      errors.push(isEn
+        ? `Too many long pauses (${Math.round(silenceRatio * 100)}% of the time in silence)`
+        : `Muitas pausas longas (${Math.round(silenceRatio * 100)}% do tempo em silêncio)`)
     }
     return { score: Math.round(score * 10) / 10, errors, silenceRatio: Math.round(silenceRatio * 100) / 100 }
   } catch {
@@ -177,6 +184,8 @@ export async function evaluate(
   const details: EvaluationResult['details'] = {}
   const FILLER_WORDS = language === 'en' ? FILLER_WORDS_EN : FILLER_WORDS_PT
 
+  const isEn = language === 'en'
+
   // 1. Ritmo
   if (duration > 1 && spoken.length > 0) {
     const wpm = spoken.length / duration * 60
@@ -184,17 +193,23 @@ export async function evaluate(
     let r: number
     if (wpm < 80) {
       r = Math.max(0, wpm / 80 * 5)
-      errors.push(`Ritmo muito lento: ${Math.round(wpm)} pal/min (ideal: ${WPM_MIN}–${WPM_MAX})`)
+      errors.push(isEn
+        ? `Pace too slow: ${Math.round(wpm)} wpm (ideal: ${WPM_MIN}–${WPM_MAX})`
+        : `Ritmo muito lento: ${Math.round(wpm)} pal/min (ideal: ${WPM_MIN}–${WPM_MAX})`)
     } else if (wpm < WPM_MIN) {
       r = 5 + (wpm - 80) / (WPM_MIN - 80) * 3
     } else if (wpm <= WPM_MAX) {
       r = 10.0
     } else if (wpm <= 200) {
       r = 10 - (wpm - WPM_MAX) / (200 - WPM_MAX) * 3
-      errors.push(`Ritmo acelerado: ${Math.round(wpm)} pal/min (ideal: ${WPM_MIN}–${WPM_MAX})`)
+      errors.push(isEn
+        ? `Pace too fast: ${Math.round(wpm)} wpm (ideal: ${WPM_MIN}–${WPM_MAX})`
+        : `Ritmo acelerado: ${Math.round(wpm)} pal/min (ideal: ${WPM_MIN}–${WPM_MAX})`)
     } else {
       r = Math.max(1.0, 7 - (wpm - 200) / 40)
-      errors.push(`Ritmo muito rápido: ${Math.round(wpm)} pal/min (ideal: ${WPM_MIN}–${WPM_MAX})`)
+      errors.push(isEn
+        ? `Pace way too fast: ${Math.round(wpm)} wpm (ideal: ${WPM_MIN}–${WPM_MAX})`
+        : `Ritmo muito rápido: ${Math.round(wpm)} pal/min (ideal: ${WPM_MIN}–${WPM_MAX})`)
     }
     scores['Ritmo'] = Math.round(Math.min(10, Math.max(0, r)) * 10) / 10
   }
@@ -210,14 +225,14 @@ export async function evaluate(
     const fstr = Object.entries(fillers)
       .sort(([, a], [, b]) => b - a)
       .map(([w, n]) => `"${w}" (${n}×)`).join(', ')
-    errors.push(`Vícios de linguagem: ${fstr}`)
+    errors.push(isEn ? `Filler words: ${fstr}` : `Vícios de linguagem: ${fstr}`)
   }
   scores['Fluência'] = Math.round(Math.max(0, Math.min(10, 10 - ratio * 50)) * 10) / 10
   details.fillers = fillers
 
   // 3. Entonação
   if (audioBlob) {
-    const { score, errors: ints, silenceRatio } = await analyzeIntonation(audioBlob)
+    const { score, errors: ints, silenceRatio } = await analyzeIntonation(audioBlob, language)
     scores['Entonação'] = score
     errors.push(...ints)
     details.silence_ratio = silenceRatio
@@ -227,22 +242,29 @@ export async function evaluate(
   if (refText.trim()) {
     const ref = splitWords(refText)
     if (ref.length > 0 && spoken.length > 0) {
-      scores['Precisão'] = Math.round(jaroWinkler(ref.join(' '), spoken.join(' ')) * 100) / 10
-
       const { wordDiff, missing, added } = computeDiff(refText, ref, spoken, FILLER_WORDS)
+
+      const correct = spoken.filter(w => ref.some(r => wordMatch(r, w))).length
+      scores['Precisão'] = Math.round(correct / Math.max(spoken.length, 1) * 100) / 10
 
       if (missing.length > 0) {
         const sample = missing.slice(0, 8).map(w => `"${w}"`).join(', ')
-        const suf = missing.length > 8 ? ` e mais ${missing.length - 8}` : ''
-        errors.push(`Palavras omitidas (${missing.length}): ${sample}${suf}`)
+        const suf = missing.length > 8 ? (isEn ? ` and ${missing.length - 8} more` : ` e mais ${missing.length - 8}`) : ''
+        errors.push(isEn
+          ? `Omitted words (${missing.length}): ${sample}${suf}`
+          : `Palavras omitidas (${missing.length}): ${sample}${suf}`)
       }
       if (added.length > 0) {
-        errors.push(`Palavras não esperadas (${added.length}): ${added.slice(0, 8).map(w => `"${w}"`).join(', ')}`)
+        errors.push(isEn
+          ? `Unexpected words (${added.length}): ${added.slice(0, 8).map(w => `"${w}"`).join(', ')}`
+          : `Palavras não esperadas (${added.length}): ${added.slice(0, 8).map(w => `"${w}"`).join(', ')}`)
       }
 
       const completude = Math.max(0, 1 - missing.length / Math.max(ref.length, 1))
       scores['Completude'] = Math.round(completude * 100) / 10
-      if (completude < 0.7) errors.push(`Apenas ${Math.round(completude * 100)}% do texto foi coberto`)
+      if (completude < 0.7) errors.push(isEn
+        ? `Only ${Math.round(completude * 100)}% of the text was covered`
+        : `Apenas ${Math.round(completude * 100)}% do texto foi coberto`)
 
       const vals = Object.values(scores)
       scores['Geral'] = Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10

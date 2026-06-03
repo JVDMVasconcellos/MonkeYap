@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
+import { t } from '../i18n'
 
 export interface ShareData {
   scores:        Record<string, number>
@@ -147,7 +148,7 @@ export function ShareCard({ data, onClose }: Props) {
               {geral.toFixed(1)}
             </div>
             <div style={{ fontSize: '11px', color: '#646480', textTransform: 'uppercase', letterSpacing: '0.15em', marginTop: '4px' }}>
-              nota geral
+              {t(language, 'label_overall')}
             </div>
           </div>
         )}
@@ -161,7 +162,7 @@ export function ShareCard({ data, onClose }: Props) {
           ))}
           <div style={{ flex: 1, paddingLeft: '16px', borderLeft: '1px solid #2a2a3e' }}>
             <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#9090a8' }}>{elapsed}s</div>
-            <div style={{ fontSize: '9px', color: '#646480', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '2px' }}>tempo</div>
+            <div style={{ fontSize: '9px', color: '#646480', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '2px' }}>{t(language, 'label_time')}</div>
           </div>
         </div>
 
@@ -183,18 +184,18 @@ export function ShareCard({ data, onClose }: Props) {
             color: 'var(--color-main)',
           }}
         >
-          📋 imagem copiada — cole no tweet com <strong>Ctrl+V</strong>
+          {t(language, 'x_banner').replace('Ctrl+V', '')} <strong>Ctrl+V</strong>
         </div>
       )}
 
       {/* ── Botões ── */}
       <div className="flex items-center gap-2">
-        <ActionBtn onClick={handleDownload} disabled={busy} title="salvar imagem">
-          <DownloadIcon />{busy ? 'gerando...' : 'salvar'}
+        <ActionBtn onClick={handleDownload} disabled={busy} title={t(language, 'save')}>
+          <DownloadIcon />{busy ? t(language, 'generating') : t(language, 'save')}
         </ActionBtn>
         {canNativeShare && (
-          <ActionBtn onClick={handleNativeShare} disabled={busy} title="compartilhar">
-            <ShareIcon />compartilhar
+          <ActionBtn onClick={handleNativeShare} disabled={busy} title={t(language, 'share')}>
+            <ShareIcon />{t(language, 'share')}
           </ActionBtn>
         )}
         {!canNativeShare && (
@@ -202,18 +203,18 @@ export function ShareCard({ data, onClose }: Props) {
             <SocialLink href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`} title="WhatsApp">
               <WhatsAppIcon />WhatsApp
             </SocialLink>
-            <ActionBtn onClick={handleXShare} disabled={busy} title="Compartilhar no X (imagem copiada automaticamente)">
-              <XIcon />{xCopied ? '✓ cole no tweet!' : 'X'}
+            <ActionBtn onClick={handleXShare} disabled={busy} title="X">
+              <XIcon />{xCopied ? t(language, 'x_pasted') : 'X'}
             </ActionBtn>
           </>
         )}
-        <ActionBtn onClick={handleInstagram} disabled={busy} title="Copiar imagem para o Instagram">
+        <ActionBtn onClick={handleInstagram} disabled={busy} title="Instagram">
           <InstagramIcon />
-          {igCopied ? '✓ copiado! cole no Instagram' : 'Instagram'}
+          {igCopied ? t(language, 'ig_copied') : 'Instagram'}
         </ActionBtn>
         {onClose && (
-          <ActionBtn onClick={onClose} title="fechar">
-            <CloseIcon />fechar
+          <ActionBtn onClick={onClose} title={t(language, 'close')}>
+            <CloseIcon />{t(language, 'close').replace('✕ ', '')}
           </ActionBtn>
         )}
       </div>
