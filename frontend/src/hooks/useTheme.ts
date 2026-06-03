@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 
-export type ThemeId = 'monkeyap' | 'oceano' | 'floresta' | 'areia'
+export type ThemeId = 'monkeyap' | 'oceano' | 'floresta' | 'areia' | 'brasa' | 'ametista'
 
 export const THEMES: { id: ThemeId; label: string; bg: string; accent: string }[] = [
   { id: 'monkeyap', label: 'MonkeYap', bg: '#393634', accent: '#e2b714' },
   { id: 'oceano',   label: 'Oceano',   bg: '#1e2837', accent: '#5b9cf6' },
   { id: 'floresta', label: 'Floresta', bg: '#1a2a1e', accent: '#52c17d' },
   { id: 'areia',    label: 'Areia',    bg: '#f2ede6', accent: '#c07b3a' },
+  { id: 'brasa',    label: 'Brasa',    bg: '#311e16', accent: '#f97316' },
+  { id: 'ametista', label: 'Ametista', bg: '#2e1535', accent: '#c084fc' },
 ]
 
 const THEME_VARS: Record<ThemeId, Record<string, string>> = {
@@ -77,6 +79,40 @@ const THEME_VARS: Record<ThemeId, Record<string, string>> = {
     '--color-text':       '#2c2416',
     '--color-error':      '#c0392b',
     '--logo-filter':      'hue-rotate(-20deg) saturate(72%) brightness(93%)',
+  },
+  brasa: {
+    '--color-bg-rgb':     '49 30 22',
+    '--color-panel-rgb':  '61 36 26',
+    '--color-border-rgb': '84 52 38',
+    '--color-main-rgb':   '249 115 22',
+    '--color-sub-rgb':    '154 104 85',
+    '--color-text-rgb':   '242 213 190',
+    '--color-error-rgb':  '239 68 68',
+    '--color-bg':         '#311e16',
+    '--color-panel':      '#3d241a',
+    '--color-border':     '#543426',
+    '--color-main':       '#f97316',
+    '--color-sub':        '#9a6855',
+    '--color-text':       '#f2d5be',
+    '--color-error':      '#ef4444',
+    '--logo-filter':      'hue-rotate(-28deg) saturate(150%) brightness(108%)',
+  },
+  ametista: {
+    '--color-bg-rgb':     '46 21 53',
+    '--color-panel-rgb':  '58 28 66',
+    '--color-border-rgb': '84 45 98',
+    '--color-main-rgb':   '192 132 252',
+    '--color-sub-rgb':    '154 114 184',
+    '--color-text-rgb':   '240 228 255',
+    '--color-error-rgb':  '244 114 182',
+    '--color-bg':         '#2e1535',
+    '--color-panel':      '#3a1c42',
+    '--color-border':     '#542d62',
+    '--color-main':       '#c084fc',
+    '--color-sub':        '#9a72b8',
+    '--color-text':       '#f0e4ff',
+    '--color-error':      '#f472b6',
+    '--logo-filter':      'hue-rotate(228deg) saturate(90%) brightness(100%)',
   },
 }
 
