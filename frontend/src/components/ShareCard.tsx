@@ -33,6 +33,7 @@ export function ShareCard({ data, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [busy, setBusy]           = useState(false)
   const [igCopied, setIgCopied]   = useState(false)
+  const [xCopied,  setXCopied]    = useState(false)
 
   const { scores, wpm, elapsed, textTitle, categoryLabel, language, date } = data
   const geral = scores['Geral']
@@ -41,6 +42,10 @@ export function ShareCard({ data, onClose }: Props) {
   const shareText = language === 'en'
     ? `I just practiced public speaking on MonkeYap! Score: ${geral?.toFixed(1) ?? '—'}/10${wpm ? ` · ${wpm} wpm` : ''} 🎤`
     : `Pratiquei oratória no MonkeYap! Nota: ${geral?.toFixed(1) ?? '—'}/10${wpm ? ` · ${wpm} wpm` : ''} 🎤`
+
+  const xShareText = shareText + (language === 'en'
+    ? ' [Paste the copied image here and delete this text]'
+    : ' [Cole a imagem copiada aqui e apague este texto]')
 
   const dateStr = new Date(date ?? Date.now()).toLocaleDateString(
     language === 'en' ? 'en-US' : 'pt-BR',
@@ -58,6 +63,23 @@ export function ShareCard({ data, onClose }: Props) {
       a.download = `monkeyap-${Date.now()}.png`
       a.href = dataUrl
       a.click()
+    } finally { setBusy(false) }
+  }
+
+  const handleXShare = async () => {
+    if (!cardRef.current) return
+    setBusy(true)
+    try {
+      const { dataUrl } = await buildImageFile(cardRef.current)
+      const blob = await fetch(dataUrl).then(r => r.blob())
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+        setXCopied(true)
+        // give user time to read the notice before focus jumps to the new tab
+        await new Promise(r => setTimeout(r, 900))
+        setTimeout(() => setXCopied(false), 3500)
+      } catch { /* clipboard not available, open immediately */ }
+      window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(xShareText)}`, '_blank', 'noopener,noreferrer')
     } finally { setBusy(false) }
   }
 
@@ -151,6 +173,20 @@ export function ShareCard({ data, onClose }: Props) {
         </div>
       </div>
 
+      {/* ── Aviso clipboard X ── */}
+      {xCopied && (
+        <div
+          className="w-full font-mono text-xs px-4 py-2 rounded-xl flex items-center gap-2"
+          style={{
+            background: 'color-mix(in srgb, var(--color-main) 12%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-main) 35%, transparent)',
+            color: 'var(--color-main)',
+          }}
+        >
+          📋 imagem copiada — cole no tweet com <strong>Ctrl+V</strong>
+        </div>
+      )}
+
       {/* ── Botões ── */}
       <div className="flex items-center gap-2">
         <ActionBtn onClick={handleDownload} disabled={busy} title="salvar imagem">
@@ -166,9 +202,9 @@ export function ShareCard({ data, onClose }: Props) {
             <SocialLink href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`} title="WhatsApp">
               <WhatsAppIcon />WhatsApp
             </SocialLink>
-            <SocialLink href={`https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`} title="X / Twitter">
-              <XIcon />X
-            </SocialLink>
+            <ActionBtn onClick={handleXShare} disabled={busy} title="Compartilhar no X (imagem copiada automaticamente)">
+              <XIcon />{xCopied ? '✓ cole no tweet!' : 'X'}
+            </ActionBtn>
           </>
         )}
         <ActionBtn onClick={handleInstagram} disabled={busy} title="Copiar imagem para o Instagram">
