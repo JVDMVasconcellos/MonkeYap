@@ -146,17 +146,19 @@ async function analyzeIntonation(blob: Blob, language = 'pt') {
     const errors: string[] = []
     let score: number
     if (meanRms < 0.005) {
-      score = 3.0
+      score = 1.0
       errors.push(isEn
         ? 'Volume too low — speak louder or move closer to the mic'
         : 'Volume muito baixo — fale mais alto ou aproxime o microfone')
-    } else if (cv < 0.15) {
-      score = 6.5
-      errors.push(isEn
-        ? 'Monotone voice — vary your intonation to engage listeners'
-        : 'Voz monótona — varie a entonação para engajar o ouvinte')
     } else {
-      score = Math.min(10.0, 6.5 + cv * 8)
+      // cv típico de fala: 0.3–0.6 (médio), 0.7–1.0 (bom), ≥1.2 (excelente)
+      // score = 1.5 + cv * 7  →  cv=0.5 → 5.0, cv=1.0 → 8.5, cv≥1.21 → 10.0
+      score = Math.min(10.0, Math.max(0.0, 1.5 + cv * 7))
+      if (cv < 0.25) {
+        errors.push(isEn
+          ? 'Monotone voice — vary your intonation to engage listeners'
+          : 'Voz monótona — varie a entonação para engajar o ouvinte')
+      }
     }
     if (silenceRatio > 0.40) {
       errors.push(isEn
@@ -219,23 +221,45 @@ export async function evaluate(
   for (const w of spoken) {
     if (FILLER_WORDS.has(w)) fillers[w] = (fillers[w] ?? 0) + 1
   }
-  const totalFill = Object.values(fillers).reduce((s, n) => s + n, 0)
-  const ratio = totalFill / Math.max(spoken.length, 1)
-  if (totalFill > 0) {
-    const fstr = Object.entries(fillers)
-      .sort(([, a], [, b]) => b - a)
-      .map(([w, n]) => `"${w}" (${n}×)`).join(', ')
-    errors.push(isEn ? `Filler words: ${fstr}` : `Vícios de linguagem: ${fstr}`)
-  }
-  scores['Fluência'] = Math.round(Math.max(0, Math.min(10, 10 - ratio * 50)) * 10) / 10
   details.fillers = fillers
+  if (spoken.length === 0) {
+    scores['Fluência'] = 0.0
+  } else {
+    const totalFill = Object.values(fillers).reduce((s, n) => s + n, 0)
+    const fillRatio = totalFill / spoken.length
+    if (totalFill > 0) {
+      const fstr = Object.entries(fillers)
+        .sort(([, a], [, b]) => b - a)
+        .map(([w, n]) => `"${w}" (${n}×)`).join(', ')
+      errors.push(isEn ? `Filler words: ${fstr}` : `Vícios de linguagem: ${fstr}`)
+    }
+
+    // Repetições: mesma palavra dita em sequência (gaguejar / perder o fio)
+    let reps = 0
+    for (let i = 1; i < spoken.length; i++) {
+      if (wordMatch(spoken[i], spoken[i - 1])) reps++
+    }
+    const repRatio = reps / spoken.length
+    if (reps > 0) {
+      errors.push(isEn
+        ? `Repeated words (${reps}): stumbling detected`
+        : `Palavras repetidas (${reps}): tropeços detectados`)
+    }
+
+    const penalty = fillRatio * 40 + repRatio * 30
+    scores['Fluência'] = Math.round(Math.max(0, Math.min(10, 10 - penalty)) * 10) / 10
+  }
 
   // 3. Entonação
   if (audioBlob) {
-    const { score, errors: ints, silenceRatio } = await analyzeIntonation(audioBlob, language)
-    scores['Entonação'] = score
-    errors.push(...ints)
-    details.silence_ratio = silenceRatio
+    if (spoken.length === 0) {
+      scores['Entonação'] = 0.0
+    } else {
+      const { score, errors: ints, silenceRatio } = await analyzeIntonation(audioBlob, language)
+      scores['Entonação'] = score
+      errors.push(...ints)
+      details.silence_ratio = silenceRatio
+    }
   }
 
   // 4. Precisão + Completude

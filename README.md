@@ -15,10 +15,11 @@ Supports **Português** and **English**.
 - **Live performance bar** — shows rhythm quality (WPM) while you record
 - **Scoring** — Precisão, Fluência, Completude, Ritmo, Entonação and a Nota Geral
 - **Fuzzy word matching** — near-matches and slight misrecognitions count as correct
-- **Session history** — all results saved locally with per-metric averages dashboard
+- **Session history** — all results saved locally with per-metric averages dashboard; tabs split PT and EN sessions
 - **Share results** — export score card as image; share to WhatsApp, X or copy to Instagram clipboard
 - **Timer modes** — unlimited, 15s, 30s or 60s
-- **Theme switcher** — 4 themes: MonkeYap, Oceano, Floresta, Areia
+- **Theme switcher** — 6 themes: MonkeYap, Oceano, Floresta, Areia, Brasa, Ametista
+- **Font size control** — A−/A+ buttons in the bottom-left corner scale all text globally; preference saved in localStorage
 - **Keyboard shortcuts** — `Tab` for new text, `Esc` to stop
 
 ---
@@ -87,11 +88,12 @@ Open [http://localhost:5173](http://localhost:5173).
 │   │   ├── App.tsx
 │   │   ├── api.ts                       # Languages, categories and text fetching
 │   │   ├── evaluator.ts                 # Client-side scoring logic
+│   │   ├── i18n.ts                      # UI strings and metric labels (PT / EN)
 │   │   ├── types.ts
 │   │   ├── components/
 │   │   │   ├── CategoryPicker.tsx       # Language / category / timer selector
 │   │   │   ├── Header.tsx
-│   │   │   ├── HistoryPanel.tsx         # Session history with metrics dashboard
+│   │   │   ├── HistoryPanel.tsx         # Session history with per-language tabs
 │   │   │   ├── PerformanceBar.tsx       # Live WPM rhythm indicator
 │   │   │   ├── ScoreBoard.tsx
 │   │   │   ├── ScoreInfoModal.tsx       # Explains each metric
@@ -100,6 +102,7 @@ Open [http://localhost:5173](http://localhost:5173).
 │   │   └── hooks/
 │   │       ├── useWebSocketSpeech.ts    # Speech recognition (Web Speech API + Vosk fallback)
 │   │       ├── useHistory.ts            # localStorage history management
+│   │       ├── useFontSize.ts           # Global font scale (A−/A+), persisted in localStorage
 │   │       ├── useRecorder.ts
 │   │       └── useTheme.ts
 │   └── public/

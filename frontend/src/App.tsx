@@ -11,6 +11,7 @@ import { ShareCard } from './components/ShareCard'
 import type { ShareData } from './components/ShareCard'
 import { TextDisplay } from './components/TextDisplay'
 import { useHistory } from './hooks/useHistory'
+import { useFontSize } from './hooks/useFontSize'
 import { useRecorder } from './hooks/useRecorder'
 import { useTheme } from './hooks/useTheme'
 import { useWebSocketSpeech } from './hooks/useWebSocketSpeech'
@@ -30,7 +31,8 @@ export default function App() {
   const [error,      setError]      = useState<string | null>(null)
 
   const { theme, setTheme } = useTheme()
-  const { entries: historyEntries, addEntry, removeEntry, clearHistory } = useHistory()
+  const { canIncrease, canDecrease, increase: increaseFontSize, decrease: decreaseFontSize } = useFontSize()
+  const { entries: historyEntries, addEntry, removeEntry, clearHistory, clearByLang } = useHistory()
   const [showHistory,   setShowHistory]   = useState(false)
   const [showScoreInfo, setShowScoreInfo] = useState(false)
   const recorder  = useRecorder()
@@ -256,6 +258,7 @@ export default function App() {
               entries={historyEntries}
               onRemove={removeEntry}
               onClear={clearHistory}
+              onClearLang={clearByLang}
               onClose={() => setShowHistory(false)}
               language={language}
             />
@@ -441,6 +444,35 @@ export default function App() {
       </footer>
 
       {showScoreInfo && <ScoreInfoModal onClose={() => setShowScoreInfo(false)} language={language} />}
+
+      {/* Controle de fonte — fixo no canto inferior esquerdo */}
+      <div
+        className="fixed bottom-4 left-4 flex items-center gap-1 font-mono"
+        style={{ color: 'var(--color-sub)', zIndex: 40 }}
+      >
+        <button
+          onClick={decreaseFontSize}
+          disabled={!canDecrease}
+          className="text-xs px-1.5 py-0.5 rounded transition-colors duration-150 cursor-pointer disabled:opacity-20 disabled:cursor-default"
+          style={{ color: 'var(--color-sub)' }}
+          onMouseEnter={e => { if (canDecrease) (e.currentTarget as HTMLElement).style.color = 'var(--color-text)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
+          title="Diminuir fonte"
+        >
+          A−
+        </button>
+        <button
+          onClick={increaseFontSize}
+          disabled={!canIncrease}
+          className="text-sm px-1.5 py-0.5 rounded transition-colors duration-150 cursor-pointer disabled:opacity-20 disabled:cursor-default"
+          style={{ color: 'var(--color-sub)' }}
+          onMouseEnter={e => { if (canIncrease) (e.currentTarget as HTMLElement).style.color = 'var(--color-text)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-sub)' }}
+          title="Aumentar fonte"
+        >
+          A+
+        </button>
+      </div>
     </div>
   )
 }

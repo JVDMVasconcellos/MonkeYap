@@ -4,15 +4,33 @@ import { ShareModal } from './ShareCard'
 import type { ShareData } from './ShareCard'
 import { t, metricLabel, type Lang } from '../i18n'
 
+type Tab = 'all' | 'pt' | 'en'
+
 interface Props {
   entries:      HistoryEntry[]
   onRemove:     (id: string) => void
   onClear:      () => void
+  onClearLang?: (lang: string) => void
   onClose:      () => void
   language:     Lang
 }
 
-export function HistoryPanel({ entries, onRemove, onClear, onClose, language }: Props) {
+export function HistoryPanel({ entries, onRemove, onClear, onClearLang, onClose, language }: Props) {
+  const [tab, setTab] = useState<Tab>('all')
+
+  const hasPt = entries.some(e => (e.language ?? 'pt') === 'pt')
+  const hasEn = entries.some(e => e.language === 'en')
+  const showTabs = hasPt && hasEn
+
+  const filtered = tab === 'all'
+    ? entries
+    : entries.filter(e => (e.language ?? 'pt') === tab)
+
+  const handleClear = () => {
+    if (tab === 'all') onClear()
+    else onClearLang?.(tab)
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 animate-slide-up">
 
@@ -22,9 +40,9 @@ export function HistoryPanel({ entries, onRemove, onClear, onClose, language }: 
           {t(language, 'history_title')}
         </span>
         <div className="flex items-center gap-4">
-          {entries.length > 0 && (
+          {filtered.length > 0 && (
             <button
-              onClick={onClear}
+              onClick={handleClear}
               className="font-mono text-xs transition-colors duration-150 cursor-pointer"
               style={{ color: 'var(--color-sub)' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-error)' }}
@@ -45,18 +63,46 @@ export function HistoryPanel({ entries, onRemove, onClear, onClose, language }: 
         </div>
       </div>
 
-      {entries.length === 0 ? (
+      {/* Tabs — só aparecem quando há sessões nos dois idiomas */}
+      {showTabs && (
+        <div className="flex gap-1">
+          {(['all', 'pt', 'en'] as Tab[]).map(id => {
+            const label = id === 'all'
+              ? t(language, 'tab_all')
+              : id === 'pt' ? '🇧🇷 português' : '🇺🇸 english'
+            const count = id === 'all'
+              ? entries.length
+              : entries.filter(e => (e.language ?? 'pt') === id).length
+            const active = tab === id
+            return (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className="font-mono text-xs px-3 py-1 rounded-full transition-colors duration-150 cursor-pointer"
+                style={{
+                  background: active ? 'var(--color-main)' : 'color-mix(in srgb, var(--color-sub) 12%, transparent)',
+                  color:      active ? 'var(--color-bg)'   : 'var(--color-sub)',
+                }}
+              >
+                {label} <span style={{ opacity: 0.7 }}>{count}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
         <p className="font-mono text-sm py-16 text-center" style={{ color: 'var(--color-sub)' }}>
           {t(language, 'no_sessions')}
         </p>
       ) : (
         <>
           {/* Summary row */}
-          <SummaryBar entries={entries} language={language} />
+          <SummaryBar entries={filtered} language={language} />
 
           {/* List */}
           <div className="flex flex-col gap-2">
-            {entries.map(e => (
+            {filtered.map(e => (
               <EntryRow key={e.id} entry={e} onRemove={onRemove} language={language} />
             ))}
           </div>

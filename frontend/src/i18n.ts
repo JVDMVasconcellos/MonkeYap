@@ -34,6 +34,7 @@ const strings = {
     ig_copied:             '✓ copiado! cole no Instagram',
     x_pasted:              '✓ cole no tweet!',
     x_banner:              '📋 imagem copiada — cole no tweet com Ctrl+V',
+    tab_all:               'todos',
   },
   en: {
     select_category:       'select a category to start',
@@ -68,6 +69,7 @@ const strings = {
     ig_copied:             '✓ copied! paste on Instagram',
     x_pasted:              '✓ paste in tweet!',
     x_banner:              '📋 image copied — paste in tweet with Ctrl+V',
+    tab_all:               'all',
   },
 } as const
 

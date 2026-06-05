@@ -48,5 +48,13 @@ export function useHistory() {
     setEntries([])
   }, [])
 
-  return { entries, addEntry, removeEntry, clearHistory }
+  const clearByLang = useCallback((lang: string) => {
+    setEntries(prev => {
+      const updated = prev.filter(e => (e.language ?? 'pt') !== lang)
+      save(updated)
+      return updated
+    })
+  }, [])
+
+  return { entries, addEntry, removeEntry, clearHistory, clearByLang }
 }

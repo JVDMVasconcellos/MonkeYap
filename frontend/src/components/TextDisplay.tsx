@@ -36,7 +36,7 @@ export function TextDisplay({ item, wordDiff, matchedCount, isActive }: Props) {
 
   return (
     <div className="w-full space-y-3">
-      {/* Título e autor — pequeno, discreto */}
+      {/* Título e autor */}
       <div className="flex items-baseline justify-between px-1">
         <span className="text-sub text-base font-mono">{item.title}</span>
         {item.author && <span className="text-sub text-base opacity-60">{item.author}</span>}
@@ -46,7 +46,7 @@ export function TextDisplay({ item, wordDiff, matchedCount, isActive }: Props) {
       <div
         className="relative w-full"
         style={{
-          height: 'calc(3 * 3rem)',  // exatamente 3 linhas visíveis
+          height: 'calc(3 * 3rem)',
           maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
           WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
         }}
@@ -60,8 +60,8 @@ export function TextDisplay({ item, wordDiff, matchedCount, isActive }: Props) {
           <div style={{ height: '0.75rem' }} />
 
           <p
-            className="font-mono leading-[3rem] tracking-wide select-none break-words"
-            style={{ fontSize: '1.5rem' }}
+            className="font-mono tracking-wide select-none break-words"
+            style={{ fontSize: '1.5rem', lineHeight: '3rem' }}
           >
             {hasResults
               // ── Pós-análise: diff posicional ──
