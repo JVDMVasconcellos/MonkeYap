@@ -60,8 +60,9 @@ Supports **Português** and **English**.
 
 | Browser | Speech engine |
 |---|---|
-| Chrome, Brave, Edge, Opera | Web Speech API (Google) |
+| Chrome, Edge, Opera | Web Speech API (Google) |
 | Safari (macOS + iOS) | Web Speech API (Apple) |
+| Brave | Web Speech API (if Shields disabled for the site), otherwise auto-falls back to Vosk WASM |
 | Firefox | Vosk WASM (offline, ~47 MB download on first use) |
 
 ---

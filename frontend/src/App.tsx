@@ -116,7 +116,7 @@ export default function App() {
     const blob = await recorder.stopRecording()
     if (blob && textItem) {
       try {
-        const res = await evaluate(blob, textItem.text, duration, speech.transcriptRef.current, language ?? 'pt')
+        const res = await evaluate(blob, textItem.text, duration, speech.transcriptRef.current, language ?? 'pt', category ?? '')
         setResults(res)
         const cat = categories.find(c => c.id === category)
         addEntry({
@@ -343,8 +343,12 @@ export default function App() {
 
                   {/* Status / hint */}
                   {appState === 'ready' && (
-                    <p className="font-mono text-sm px-4 py-1.5 rounded-full" style={{ background: 'rgb(var(--color-panel-rgb)/0.6)', color: 'var(--color-sub)' }}>
-                      {speech.modelLoading ? t(language, 'loading_model') : t(language, 'speak_to_start')}
+                    <p className="font-mono text-sm px-4 py-1.5 rounded-full" style={{ background: 'rgb(var(--color-panel-rgb)/0.6)', color: speech.modelError ? 'var(--color-error)' : 'var(--color-sub)' }}>
+                      {speech.modelError
+                        ? speech.modelError
+                        : speech.modelLoading
+                          ? t(language, 'loading_model')
+                          : t(language, 'speak_to_start')}
                     </p>
                   )}
                   {isRecording && <AudioLevel level={speech.audioLevel} isActive />}

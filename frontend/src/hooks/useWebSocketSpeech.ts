@@ -3,10 +3,10 @@ import { createModel, type KaldiRecognizer, type Model } from 'vosk-browser'
 
 const SAMPLE_RATE      = 16000
 const BUFFER_SIZE      = 256
-const SKIP_WINDOW      = 8
-const CONFIRMED_SKIP   = 3
-const SKIP_WINDOW_EN    = 12
-const CONFIRMED_SKIP_EN = 6
+const SKIP_WINDOW      = 12
+const CONFIRMED_SKIP   = 6
+const SKIP_WINDOW_EN    = 16
+const CONFIRMED_SKIP_EN = 8
 
 const MODEL_URL = '/models/vosk-pt.tar.gz'
 
@@ -65,6 +65,46 @@ function normalize(s: string): string {
   return DIGIT_TO_WORD[base] ?? base
 }
 
+function jaro(s1: string, s2: string): number {
+  if (s1 === s2) return 1
+  const l1 = s1.length, l2 = s2.length
+  const dist = Math.max(Math.floor(Math.max(l1, l2) / 2) - 1, 0)
+  const m1 = new Array<boolean>(l1).fill(false)
+  const m2 = new Array<boolean>(l2).fill(false)
+  let matches = 0
+  for (let i = 0; i < l1; i++) {
+    const lo = Math.max(0, i - dist), hi = Math.min(i + dist + 1, l2)
+    for (let j = lo; j < hi; j++) {
+      if (m2[j] || s1[i] !== s2[j]) continue
+      m1[i] = m2[j] = true; matches++; break
+    }
+  }
+  if (matches === 0) return 0
+  let k = 0, t = 0
+  for (let i = 0; i < l1; i++) {
+    if (!m1[i]) continue
+    while (!m2[k]) k++
+    if (s1[i] !== s2[k]) t++
+    k++
+  }
+  return (matches / l1 + matches / l2 + (matches - t / 2) / matches) / 3
+}
+
+function jaroWinkler(s1: string, s2: string): number {
+  const j = jaro(s1, s2)
+  let p = 0
+  for (let i = 0; i < Math.min(4, s1.length, s2.length); i++) {
+    if (s1[i] === s2[i]) p++; else break
+  }
+  return j + p * 0.1 * (1 - j)
+}
+
+function wordMatch(a: string, b: string): boolean {
+  if (a === b) return true
+  if (Math.abs(a.length - b.length) > 4) return false
+  return jaroWinkler(a, b) >= 0.80
+}
+
 function alignTranscript(spokenWords: string[], refNormalized: string[], startFrom: number, skipWindow = SKIP_WINDOW): number {
   let pos = startFrom
   for (const raw of spokenWords) {
@@ -72,7 +112,7 @@ function alignTranscript(spokenWords: string[], refNormalized: string[], startFr
     if (!w) continue
     const limit = Math.min(pos + skipWindow, refNormalized.length)
     for (let i = pos; i < limit; i++) {
-      if (refNormalized[i] === w) {
+      if (wordMatch(refNormalized[i], w)) {
         pos = i + 1
         break
       }
@@ -129,6 +169,9 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
   const skipWindowRef   = useRef(SKIP_WINDOW)
   const confirmedSkipRef = useRef(CONFIRMED_SKIP)
 
+  // Fallback flag: set when Web Speech API fails with network error → switch to Vosk
+  const networkFallbackRef = useRef(false)
+
   // Only preload Vosk when Web Speech API is unavailable (Firefox)
   useEffect(() => {
     if (NativeSRCtor !== null) return
@@ -169,29 +212,100 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
     if (confirmed && newCursor > confirmedRef.current) confirmedRef.current = newCursor
   }
 
-  const _teardown = useCallback(() => {
+  // keepTranscript=true: graceful SR stop (allows last final result to arrive before evaluate)
+  const _teardown = useCallback((keepTranscript = false) => {
     cancelAnimationFrame(rafRef.current)
 
-    // Web Speech API teardown
     if (nativeSRRef.current) {
       nativeSRRef.current.onend = null
-      nativeSRRef.current.abort()
+      if (keepTranscript) {
+        nativeSRRef.current.stop()   // graceful: SR fires one last onresult before ending
+      } else {
+        nativeSRRef.current.abort()  // immediate: discard in-progress utterance
+      }
       nativeSRRef.current = null
     }
 
-    // Vosk teardown
     processorRef.current?.disconnect()
     processorRef.current = null
     try { recognizerRef.current?.remove() } catch { /* ok */ }
     recognizerRef.current = null
 
-    // Common teardown
     ctxRef.current?.close().catch(() => {})
     ctxRef.current = null
     streamRef.current?.getTracks().forEach(t => t.stop())
     streamRef.current = null
-    lastFinalTextRef.current   = ''
-    lastPartialTextRef.current = ''
+
+    if (!keepTranscript) {
+      lastFinalTextRef.current   = ''
+      lastPartialTextRef.current = ''
+    }
+  }, [])
+
+  const _startVosk = useCallback(async () => {
+    const model = modelRef.current
+    if (!model) throw new Error('Modelo Vosk não disponível')
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      video: false,
+    })
+    streamRef.current = stream
+
+    const ctx = new AudioContext({ sampleRate: SAMPLE_RATE })
+    ctxRef.current = ctx
+
+    const uniqueWords = Array.from(new Set(refNormalizedRef.current.filter(Boolean)))
+    const grammar     = JSON.stringify([...uniqueWords, '[unk]'])
+
+    const recognizer = new model.KaldiRecognizer(SAMPLE_RATE, grammar)
+    recognizer.setWords(true)
+    recognizerRef.current = recognizer
+
+    recognizer.on('result', (msg) => {
+      if (msg.event !== 'result') return
+      const newText = msg.result.text?.trim()
+      if (!newText) return
+      lastFinalTextRef.current = (lastFinalTextRef.current + ' ' + newText).trim()
+      _setTranscript(lastFinalTextRef.current)
+      _advance(newText.split(/\s+/).filter(Boolean), true)
+    })
+
+    recognizer.on('partialresult', (msg) => {
+      if (msg.event !== 'partialresult') return
+      const partial = msg.result.partial?.trim() ?? ''
+      if (!partial) return
+      _advance(partial.split(/\s+/).filter(Boolean), false)
+    })
+
+    const source    = ctx.createMediaStreamSource(stream)
+    const processor = ctx.createScriptProcessor(BUFFER_SIZE, 1, 1)
+    processorRef.current = processor
+
+    const analyser  = ctx.createAnalyser()
+    analyser.fftSize = 256
+    source.connect(analyser)
+
+    const silencer      = ctx.createGain()
+    silencer.gain.value = 0
+    source.connect(processor)
+    processor.connect(silencer)
+    silencer.connect(ctx.destination)
+
+    cancelAnimationFrame(rafRef.current)
+    const buf = new Float32Array(analyser.fftSize)
+    const tick = () => {
+      analyser.getFloatTimeDomainData(buf)
+      const rms = Math.sqrt(buf.reduce((s, x) => s + x * x, 0) / buf.length)
+      setAudioLevel(Math.min(rms * 10, 1))
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+
+    processor.onaudioprocess = (e) => {
+      try { recognizer.acceptWaveform(e.inputBuffer) } catch { /* ignora chunks ruins */ }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const start = useCallback(async (refWords: string[], lang = 'pt-BR') => {
@@ -235,11 +349,12 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
       rafRef.current = requestAnimationFrame(tick)
 
       // Start recognition
-      const sr          = new NativeSRCtor()
-      sr.continuous     = true
-      sr.interimResults = true
-      sr.lang           = lang
-      nativeSRRef.current = sr
+      const sr             = new NativeSRCtor()
+      sr.continuous        = true
+      sr.interimResults    = true
+      sr.lang              = lang
+      sr.maxAlternatives   = 3
+      nativeSRRef.current  = sr
 
       sr.onresult = (event: any) => {
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -250,7 +365,11 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
             lastFinalTextRef.current  = (lastFinalTextRef.current + ' ' + text).trim()
             lastPartialTextRef.current = ''
             _setTranscript(lastFinalTextRef.current)
-            _advance(text.split(/\s+/).filter(Boolean), true)
+            // Try all alternatives so the best-matching one advances the cursor
+            for (let k = 0; k < result.length; k++) {
+              const alt = result[k].transcript.trim()
+              if (alt) _advance(alt.split(/\s+/).filter(Boolean), true)
+            }
           } else {
             lastPartialTextRef.current = text
             const combined = (lastFinalTextRef.current + ' ' + text).trim()
@@ -261,8 +380,40 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
       }
 
       sr.onerror = (event: any) => {
-        if (event.error === 'no-speech') return // normal during pauses
+        if (event.error === 'no-speech') return
         console.warn('SpeechRecognition error:', event.error)
+        const isEn = lang.startsWith('en')
+        if (event.error === 'not-allowed') {
+          setModelError(isEn
+            ? 'Microphone blocked — check your browser permissions'
+            : 'Microfone bloqueado — verifique as permissões do navegador')
+        } else if ((event.error === 'network' || event.error === 'service-not-allowed') && !networkFallbackRef.current) {
+          // Web Speech API blocked (Brave / no network) — fall back to local Vosk model
+          networkFallbackRef.current = true
+          nativeSRRef.current.onend = null
+          nativeSRRef.current.abort()
+          nativeSRRef.current = null
+          cancelAnimationFrame(rafRef.current)
+          ctxRef.current?.close().catch(() => {})
+          ctxRef.current = null
+          streamRef.current?.getTracks().forEach(t => t.stop())
+          streamRef.current = null
+          setModelLoading(true)
+          loadModel()
+            .then(async m => {
+              if (!activeRef.current) return
+              modelRef.current = m
+              setModelLoading(false)
+              await _startVosk()
+            })
+            .catch(() => {
+              if (!activeRef.current) return
+              setModelLoading(false)
+              setModelError(isEn
+                ? 'Speech recognition unavailable — try Chrome or Edge'
+                : 'Reconhecimento de voz indisponível — tente Chrome ou Edge')
+            })
+        }
       }
 
       // Chrome stops recognition after ~60s of silence — restart automatically
@@ -270,82 +421,23 @@ export function useWebSocketSpeech(): UseWebSocketSpeechReturn {
 
       sr.start()
     } else {
-      // ── Vosk WASM (Firefox fallback) ──
-      const model = modelRef.current
-      if (!model) throw new Error('Modelo Vosk ainda não carregou')
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
-        video: false,
-      })
-      streamRef.current = stream
-
-      const ctx = new AudioContext({ sampleRate: SAMPLE_RATE })
-      ctxRef.current = ctx
-
-      const uniqueWords = Array.from(new Set(refNormalizedRef.current.filter(Boolean)))
-      const grammar     = JSON.stringify([...uniqueWords, '[unk]'])
-
-      const recognizer = new model.KaldiRecognizer(SAMPLE_RATE, grammar)
-      recognizer.setWords(true)
-      recognizerRef.current = recognizer
-
-      recognizer.on('result', (msg) => {
-        if (msg.event !== 'result') return
-        const newText = msg.result.text?.trim()
-        if (!newText) return
-        lastFinalTextRef.current = (lastFinalTextRef.current + ' ' + newText).trim()
-        _setTranscript(lastFinalTextRef.current)
-        _advance(newText.split(/\s+/).filter(Boolean), true)
-      })
-
-      recognizer.on('partialresult', (msg) => {
-        if (msg.event !== 'partialresult') return
-        const partial = msg.result.partial?.trim() ?? ''
-        if (!partial) return
-        _advance(partial.split(/\s+/).filter(Boolean), false)
-      })
-
-      const source    = ctx.createMediaStreamSource(stream)
-      const processor = ctx.createScriptProcessor(BUFFER_SIZE, 1, 1)
-      processorRef.current = processor
-
-      const analyser  = ctx.createAnalyser()
-      analyser.fftSize = 256
-      source.connect(analyser)
-
-      const silencer      = ctx.createGain()
-      silencer.gain.value = 0
-      source.connect(processor)
-      processor.connect(silencer)
-      silencer.connect(ctx.destination)
-
-      const buf = new Float32Array(analyser.fftSize)
-      const tick = () => {
-        analyser.getFloatTimeDomainData(buf)
-        const rms = Math.sqrt(buf.reduce((s, x) => s + x * x, 0) / buf.length)
-        setAudioLevel(Math.min(rms * 10, 1))
-        rafRef.current = requestAnimationFrame(tick)
-      }
-      rafRef.current = requestAnimationFrame(tick)
-
-      processor.onaudioprocess = (e) => {
-        try { recognizer.acceptWaveform(e.inputBuffer) } catch { /* ignora chunks ruins */ }
-      }
+      // ── Vosk WASM (Firefox / Brave fallback) ──
+      await _startVosk()
     }
-  }, [])
+  }, [_startVosk])
 
   const stop = useCallback(() => {
     activeRef.current = false
     const safe = confirmedRef.current
-    _teardown()
+    _teardown(true)  // graceful: keep transcript so SR can deliver last final result
     matchedRef.current = safe
     setMatchedCount(safe)
     setAudioLevel(0)
   }, [_teardown])
 
   const reset = useCallback(() => {
-    activeRef.current  = false
+    activeRef.current        = false
+    networkFallbackRef.current = false
     _teardown()
     matchedRef.current   = 0
     confirmedRef.current = 0

@@ -14,8 +14,18 @@ const FILLER_WORDS_EN = new Set([
   'you know', 'i mean', 'sort of', 'kind of',
 ])
 
-const WPM_MIN = 120
-const WPM_MAX = 160
+const WPM_RANGES: Record<string, { min: number; max: number }> = {
+  facil:        { min: 110, max: 150 },
+  portugues:    { min: 120, max: 160 },
+  se_manda:     { min: 100, max: 140 },
+  drummond:     { min:  80, max: 130 },
+  trava_lingua: { min: 150, max: 210 },
+  easy_en:      { min: 120, max: 160 },
+  culture_en:   { min: 130, max: 170 },
+  classics_en:  { min: 110, max: 150 },
+  poetry_en:    { min:  90, max: 130 },
+}
+const WPM_DEFAULT = { min: 120, max: 160 }
 const SKIP_WINDOW = 8
 
 const SYMBOL_TO_WORDS: [string, string][] = [
@@ -84,7 +94,7 @@ function jaroWinkler(s1: string, s2: string): number {
 
 // ── Word diff (greedy alignment) ─────────────────────────────────────────────
 
-const FUZZY_THRESHOLD = 0.85
+const FUZZY_THRESHOLD = 0.82
 
 function wordMatch(ref: string, spoken: string): boolean {
   if (ref === spoken) return true
@@ -179,6 +189,7 @@ export async function evaluate(
   duration: number,
   audioBlob?: Blob,
   language = 'pt',
+  category = '',
 ): Promise<EvaluationResult> {
   const spoken = splitWords(transcript)
   const scores: Record<string, number> = {}
@@ -187,28 +198,30 @@ export async function evaluate(
   const FILLER_WORDS = language === 'en' ? FILLER_WORDS_EN : FILLER_WORDS_PT
 
   const isEn = language === 'en'
+  const { min: WPM_MIN, max: WPM_MAX } = WPM_RANGES[category] ?? WPM_DEFAULT
 
   // 1. Ritmo
   if (duration > 1 && spoken.length > 0) {
     const wpm = spoken.length / duration * 60
     details.wpm = Math.round(wpm)
     let r: number
-    if (wpm < 80) {
-      r = Math.max(0, wpm / 80 * 5)
+    const slowFloor = Math.min(80, WPM_MIN - 20)
+    if (wpm < slowFloor) {
+      r = Math.max(0, wpm / slowFloor * 5)
       errors.push(isEn
         ? `Pace too slow: ${Math.round(wpm)} wpm (ideal: ${WPM_MIN}–${WPM_MAX})`
         : `Ritmo muito lento: ${Math.round(wpm)} pal/min (ideal: ${WPM_MIN}–${WPM_MAX})`)
     } else if (wpm < WPM_MIN) {
-      r = 5 + (wpm - 80) / (WPM_MIN - 80) * 3
+      r = 5 + (wpm - slowFloor) / (WPM_MIN - slowFloor) * 5
     } else if (wpm <= WPM_MAX) {
       r = 10.0
-    } else if (wpm <= 200) {
-      r = 10 - (wpm - WPM_MAX) / (200 - WPM_MAX) * 3
+    } else if (wpm <= WPM_MAX + 40) {
+      r = 10 - (wpm - WPM_MAX) / 40 * 3
       errors.push(isEn
         ? `Pace too fast: ${Math.round(wpm)} wpm (ideal: ${WPM_MIN}–${WPM_MAX})`
         : `Ritmo acelerado: ${Math.round(wpm)} pal/min (ideal: ${WPM_MIN}–${WPM_MAX})`)
     } else {
-      r = Math.max(1.0, 7 - (wpm - 200) / 40)
+      r = Math.max(1.0, 7 - (wpm - (WPM_MAX + 40)) / 40)
       errors.push(isEn
         ? `Pace way too fast: ${Math.round(wpm)} wpm (ideal: ${WPM_MIN}–${WPM_MAX})`
         : `Ritmo muito rápido: ${Math.round(wpm)} pal/min (ideal: ${WPM_MIN}–${WPM_MAX})`)
